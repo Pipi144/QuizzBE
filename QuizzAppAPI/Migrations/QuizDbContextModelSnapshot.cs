@@ -85,6 +85,10 @@ namespace QuizzAppAPI.Migrations
                     b.Property<int>("CreatedByUserId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("QuizName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int?>("TimeLimit")
                         .HasColumnType("integer");
 
@@ -132,11 +136,11 @@ namespace QuizzAppAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Password")
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
 

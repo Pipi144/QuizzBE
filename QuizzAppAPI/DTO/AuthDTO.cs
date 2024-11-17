@@ -1,8 +1,12 @@
-namespace QuizzAppAPI.Models;
+namespace QuizzAppAPI.DTO;
 
-public class User
+public class AuthDTO
 {
-    public int Id { get; set; }
+    
+}
+
+public class LoginDTO
+{
     public string Email { get; set; }
     public string Password { get; set; }
 }
