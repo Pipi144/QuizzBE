@@ -1,10 +1,5 @@
 namespace QuizzAppAPI.DTO;
 
-public class AuthDTO
-{
-    
-}
-
 public class LoginDTO
 {
     public string Email { get; set; }

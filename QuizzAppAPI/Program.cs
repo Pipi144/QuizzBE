@@ -5,10 +5,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuizzAppAPI.Mappers;
 using QuizzAppAPI.QuizAppDbContext;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(UserMapper));
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();

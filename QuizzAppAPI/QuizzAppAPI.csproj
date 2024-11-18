@@ -24,8 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Interfaces\" />
-      <Folder Include="Mappers\" />
       <Folder Include="Repositories\" />
     </ItemGroup>
 
