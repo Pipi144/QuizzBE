@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Mvc;
+using QuizzAppAPI.DTO;
 using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.Interfaces;
 
 public interface IAuthRepository
 {
-    User GetUserByEmailAndPassword(string email, string password);
-    IEnumerable<User> GetAllUsers();
+    Task<TokenResponse?> Login(string email, string password);
 }
