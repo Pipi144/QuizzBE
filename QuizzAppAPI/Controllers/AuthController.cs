@@ -17,31 +17,84 @@ namespace QuizzAppAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-       private readonly IAuthService _authService;
+        private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-       public AuthController(IAuthService authService)
-       {
-           _authService = authService;
-       }
-       
-        
-        [HttpPost("login")]
-        public async Task<ActionResult<User>> Login(LoginDTO data)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
+            _authService = authService;
+            _logger = logger;
+        }
+
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO data)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                var res = await _authService.Login(data.Email, data.Password);
-                if (res == null)
-                    return BadRequest(new { message = "Username or password is incorrect" });
-                else 
-                    return Ok(res);
+                var result = await _authService.Login(data.Email, data.Password);
+
+                if (result == null)
+                {
+                    // Handle errors directly from Auth0
+                    var auth0Error = _authService.GetLastAuth0Error();
+                    if (auth0Error != null)
+                    {
+                        // Forward Auth0 status code and error message
+                        return StatusCode(auth0Error.StatusCode, auth0Error.Content);
+                    }
+
+                    // Fallback if there's no specific error information
+                    return BadRequest(new { message = "An unexpected error occurred." });
+                }
+
+                return Ok(result);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Error occurred during login for user: {Email}", data.Email);
                 return StatusCode(500, "Internal server error");
             }
         }
-      
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDTO data)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _authService.Register(data);
+
+                if (result == null)
+                {
+                    // Handle errors directly from Auth0
+                    var auth0Error = _authService.GetLastAuth0Error();
+                    if (auth0Error != null)
+                    {
+                        // Forward Auth0 status code and error message
+                        return StatusCode(auth0Error.StatusCode, auth0Error.Content);
+                    }
+
+                    // Fallback if there's no specific error information
+                    return BadRequest(new { message = "An unexpected error occurred." });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while registering user: {Email}", data.Email);
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

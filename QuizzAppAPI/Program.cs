@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuizzAppAPI.Interfaces;
-using QuizzAppAPI.Mappers;
+using QuizzAppAPI.Models;
 using QuizzAppAPI.QuizAppDbContext;
 using QuizzAppAPI.Service;
 
@@ -14,12 +14,42 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(UserMapper));
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
+    
+    // Define the security scheme
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        Description = "Please enter a valid token"
+    });
+    
+    // Make sure Swagger knows that this is a required security requirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 
 //Register Db
@@ -74,14 +104,18 @@ builder.Services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
 
 // Dependency injection
 builder.Services.AddScoped<IAuthService, AuthService>();
-
+builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
+builder.Services.AddHttpClient();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API v1");
+    });
 }
 
 app.UseRouting();
