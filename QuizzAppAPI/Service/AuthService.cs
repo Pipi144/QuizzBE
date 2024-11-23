@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -13,6 +14,7 @@ public class AuthService : IAuthService
     private readonly HttpClient _httpClient;
     private readonly ILogger<AuthService> _logger;
     private ErrorResponse? _lastAuth0Error;
+
     public AuthService(
         IOptions<Auth0Settings> auth0Settings,
         HttpClient httpClient,
@@ -23,7 +25,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    private async Task<T?> SendAuth0Request<T>(string url, object requestBody)
+    private async Task<T?> PostAuth0Request<T>(string url, object requestBody)
     {
         try
         {
@@ -31,13 +33,13 @@ public class AuthService : IAuthService
             {
                 NullValueHandling = NullValueHandling.Ignore
             };
-            var content = new StringContent(JsonConvert.SerializeObject(requestBody,jsonSettings),
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody, jsonSettings),
                 Encoding.UTF8,
                 "application/json");
 
             var response = await _httpClient.PostAsync(url, content);
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             Console.WriteLine(responseContent);
             if (!response.IsSuccessStatusCode)
             {
@@ -49,8 +51,9 @@ public class AuthService : IAuthService
                 };
                 return default;
             }
+
             _logger.LogInformation("Auth0 Response: {Response}", responseContent);
-    
+
             return JsonConvert.DeserializeObject<T>(responseContent);
         }
         catch (Exception ex)
@@ -62,7 +65,7 @@ public class AuthService : IAuthService
 
     public async Task<RegisterResponseDTO?> Register(RegisterDTO data)
     {
-        var requestBody = new 
+        var requestBody = new
         {
             email = data.Email,
             password = data.Password,
@@ -76,12 +79,11 @@ public class AuthService : IAuthService
             name = !string.IsNullOrEmpty(data.Name) ? data.Name : null,
             nickname = !string.IsNullOrEmpty(data.NickName) ? data.NickName : null
         };
-        
-        return await SendAuth0Request<RegisterResponseDTO>(
+
+        return await PostAuth0Request<RegisterResponseDTO>(
             $"https://{_auth0Settings.Domain}/dbconnections/signup",
             requestBody
         );
-        
     }
 
     public async Task<LoginResponseDTO?> Login(LoginDTO data)
@@ -95,15 +97,55 @@ public class AuthService : IAuthService
             audience = _auth0Settings.Audience,
             grant_type = "password",
             connection = _auth0Settings.Connection,
+            scope = "openid profile email"
         };
-        return await SendAuth0Request<LoginResponseDTO>(
+        return await PostAuth0Request<LoginResponseDTO>(
             $"https://{_auth0Settings.Domain}/oauth/token",
             requestBody
         );
     }
-    
+
     public ErrorResponse? GetLastAuth0Error()
     {
         return _lastAuth0Error;
+    }
+
+    public Task DeleteUser(string Id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<UserResponseDTO?> GetUserInfo(string accessToken)
+    {
+        try
+        {
+            // Set default headers for every request
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            Console.WriteLine(accessToken);
+            var response = await _httpClient.GetAsync(
+                $"https://{_auth0Settings.Domain}/userinfo");
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(responseContent);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Store the last error details
+                _lastAuth0Error = new ErrorResponse
+                {
+                    StatusCode = (int)response.StatusCode,
+                    Content = responseContent
+                };
+                return default;
+            }
+
+            _logger.LogInformation("Auth0 Response: {Response}", responseContent);
+
+            return JsonConvert.DeserializeObject<UserResponseDTO>(responseContent);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

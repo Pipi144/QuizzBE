@@ -129,8 +129,21 @@ namespace QuizzAppAPI.Controllers
                 
                 if (accessToken == null)
                     return Unauthorized("Access token is missing or invalid.");
+                var result = await _authService.GetUserInfo(accessToken);
+                if (result == null)
+                {
+                    // Handle errors directly from Auth0
+                    var auth0Error = _authService.GetLastAuth0Error();
+                    if (auth0Error != null)
+                    {
+                        // Forward Auth0 status code and error message
+                        return StatusCode(auth0Error.StatusCode, auth0Error.Content);
+                    }
 
-                return Ok();
+                    // Fallback if there's no specific error information
+                    return BadRequest(new { message = "An unexpected error occurred." });
+                }
+                return Ok(result);
             }
             catch (Exception ex)
             {
