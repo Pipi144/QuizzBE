@@ -60,7 +60,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<RegisterAuth0ResponseDTO?> Register(RegisterDTO data)
+    public async Task<RegisterResponseDTO?> Register(RegisterDTO data)
     {
         var requestBody = new 
         {
@@ -77,25 +77,26 @@ public class AuthService : IAuthService
             nickname = !string.IsNullOrEmpty(data.NickName) ? data.NickName : null
         };
         
-        return await SendAuth0Request<RegisterAuth0ResponseDTO>(
+        return await SendAuth0Request<RegisterResponseDTO>(
             $"https://{_auth0Settings.Domain}/dbconnections/signup",
             requestBody
         );
+        
     }
 
-    public async Task<TokenResponseDTO?> Login(string email, string password)
+    public async Task<LoginResponseDTO?> Login(LoginDTO data)
     {
         var requestBody = new
         {
-            username = email,
-            password = password,
+            username = data.Email,
+            password = data.Password,
             client_id = _auth0Settings.ClientId,
             client_secret = _auth0Settings.ClientSecret,
             audience = _auth0Settings.Audience,
             grant_type = "password",
             connection = _auth0Settings.Connection,
         };
-        return await SendAuth0Request<TokenResponseDTO>(
+        return await SendAuth0Request<LoginResponseDTO>(
             $"https://{_auth0Settings.Domain}/oauth/token",
             requestBody
         );

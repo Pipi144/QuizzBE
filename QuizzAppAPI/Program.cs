@@ -56,6 +56,11 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<QuizDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register AutoMapper with assembly scanning
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+
+
 builder.Services.AddAuthorization();
 
 // Auth0 configuration

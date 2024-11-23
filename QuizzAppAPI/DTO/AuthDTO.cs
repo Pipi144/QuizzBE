@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace QuizzAppAPI.DTO;
 
@@ -8,21 +9,15 @@ public class LoginDTO
     public string Password { get; set; }
 }
 
-public class TokenResponseDTO
+public class LoginResponseDTO
 {
     [JsonProperty("access_token")]
     public string AccessToken { get; set; }
-
-    [JsonProperty("refresh_token")]
-    public string RefreshToken { get; set; }
-
     [JsonProperty("expires_in")]
     public int ExpiresIn { get; set; }
-
     [JsonProperty("token_type")]
     public string TokenType { get; set; }
 }
-
 
 public class RegisterDTO
 {
@@ -35,32 +30,25 @@ public class RegisterDTO
     public string? NickName { get; set; }
 }
 
-public class RegisterAuth0ResponseDTO
+public class RegisterResponseDTO
 {
-    [JsonProperty("_id")]
-    public string Id { get; }
-    
-    [JsonProperty("email_verified")]
-    public bool EmailVerified { get; }
-    
-    [JsonProperty("email")]
-    public string Email { get; }
-    
-    [JsonProperty("username")]
-    public string UserName { get; set; }
-    
-    [JsonProperty("given_name")]
-    public string GivenName { get; set; }
+    [JsonProperty("_id")] 
+    public string Id { get; set; }
+    [JsonProperty("email_verified")] 
+    public bool EmailVerified { get; set; }
+    [JsonProperty("email")] 
+    public string? Email { get; set; }
+    [JsonProperty("username")] 
+    public string? UserName { get; set; }
+    [JsonProperty("given_name")] 
+    public string? GivenName { get; set; }
+    [JsonProperty("family_name")] 
+    public string? FamilyName { get; set; }
+    [JsonProperty("name")] 
+    public string? Name { get; set; }
+    [JsonProperty("nickname")] 
+    public string? NickName { get; set; }
 
-    [JsonProperty("family_name")]
-    public string FamilyName { get; set; }
-    
-    [JsonProperty("Name")]
-    public string Name { get; set; }
-    
-    [JsonProperty("nickname")]
-    public string NickName { get; set; }
-  
-    [JsonProperty("picture")]
-    public string Picture { get; set; }
+    [JsonProperty("picture")] 
+    public string? Picture { get; set; }
 }

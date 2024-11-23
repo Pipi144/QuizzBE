@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,13 +20,32 @@ namespace QuizzAppAPI.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IMapper _mapper;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IMapper mapper)
         {
             _authService = authService;
             _logger = logger;
+            _mapper = mapper;
         }
 
+        private string? CheckAccessToken()
+        {
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                // Extract the token by removing "Bearer " prefix
+                var accessToken = authHeader.Substring("Bearer ".Length).Trim();
+
+                // Now you have the access token, and you can use it as needed
+                return accessToken;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO data)
@@ -37,7 +57,7 @@ namespace QuizzAppAPI.Controllers
 
             try
             {
-                var result = await _authService.Login(data.Email, data.Password);
+                var result = await _authService.Login(data);
 
                 if (result == null)
                 {
@@ -93,6 +113,28 @@ namespace QuizzAppAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while registering user: {Email}", data.Email);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+        
+        
+        [HttpGet("user-info")]
+        public async Task<IActionResult> GetUserInfo()
+        {
+            
+
+            try
+            {
+                var accessToken = CheckAccessToken();
+                
+                if (accessToken == null)
+                    return Unauthorized("Access token is missing or invalid.");
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+
                 return StatusCode(500, "Internal server error");
             }
         }
