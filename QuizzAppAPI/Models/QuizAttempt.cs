@@ -8,6 +8,6 @@ public class QuizAttempt
     public int Score { get; set; }
     public DateTime CreatedAt { get; set; }
     [Required]
-    public User AttemptBy { get; set; }
+    public string AttemptByUserId { get; set; }
     public Quiz Quiz { get; set; }
 }

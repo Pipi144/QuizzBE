@@ -97,18 +97,12 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
-// builder.Services.AddAuthentication(options =>
-// {
-//     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-// }).AddJwtBearer(options =>
-// {
-//     options.Authority = "https://dev-hpou0jp8hflr02wz.au.auth0.com/";
-//     options.Audience = "https://localhost:7285/";
-// });
-
 // Dependency injection
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+
 builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
 builder.Services.AddHttpClient();
 var app = builder.Build();

@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using QuizzAppAPI.DTO;
@@ -25,7 +26,8 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    private async Task<T?> PostAuth0Request<T>(string url, object requestBody)
+
+    private async Task<T?> PostAuth0Request<T>(string url, object requestBody, MediaTypeHeaderValue? mediaType = null)
     {
         try
         {
@@ -34,9 +36,8 @@ public class AuthService : IAuthService
                 NullValueHandling = NullValueHandling.Ignore
             };
             var content = new StringContent(JsonConvert.SerializeObject(requestBody, jsonSettings),
-                Encoding.UTF8,
-                "application/json");
-
+                Encoding.UTF8);
+            content.Headers.ContentType = mediaType ?? new MediaTypeHeaderValue("application/json");
             var response = await _httpClient.PostAsync(url, content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
@@ -63,6 +64,8 @@ public class AuthService : IAuthService
         }
     }
 
+    
+
     public async Task<RegisterResponseDTO?> Register(RegisterDTO data)
     {
         var requestBody = new
@@ -86,61 +89,26 @@ public class AuthService : IAuthService
         );
     }
 
-    public async Task<LoginResponseDTO?> Login(LoginDTO data)
-    {
-        var requestBody = new
-        {
-            username = data.Email,
-            password = data.Password,
-            client_id = _auth0Settings.ClientId,
-            client_secret = _auth0Settings.ClientSecret,
-            audience = _auth0Settings.Audience,
-            grant_type = "password",
-            connection = _auth0Settings.Connection,
-            scope = "openid profile email"
-        };
-        return await PostAuth0Request<LoginResponseDTO>(
-            $"https://{_auth0Settings.Domain}/oauth/token",
-            requestBody
-        );
-    }
-
-    public ErrorResponse? GetLastAuth0Error()
-    {
-        return _lastAuth0Error;
-    }
-
-    public Task DeleteUser(string Id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<UserResponseDTO?> GetUserInfo(string accessToken)
+    public async Task<TokenResponseDTO?> Login(LoginDTO data)
     {
         try
         {
-            // Set default headers for every request
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            Console.WriteLine(accessToken);
-            var response = await _httpClient.GetAsync(
-                $"https://{_auth0Settings.Domain}/userinfo");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseContent);
-            if (!response.IsSuccessStatusCode)
+            var requestBody = new
             {
-                // Store the last error details
-                _lastAuth0Error = new ErrorResponse
-                {
-                    StatusCode = (int)response.StatusCode,
-                    Content = responseContent
-                };
-                return default;
-            }
-
-            _logger.LogInformation("Auth0 Response: {Response}", responseContent);
-
-            return JsonConvert.DeserializeObject<UserResponseDTO>(responseContent);
+                username = data.Email,
+                password = data.Password,
+                client_id = _auth0Settings.ClientId,
+                client_secret = _auth0Settings.ClientSecret,
+                audience = _auth0Settings.Audience,
+                grant_type = "password",
+                connection = _auth0Settings.Connection,
+                scope = "openid profile email"
+            };
+            // Call the login endpoint to get user-specific token
+            return await PostAuth0Request<TokenResponseDTO>(
+                $"https://{_auth0Settings.Domain}/oauth/token",
+                requestBody
+            );
         }
         catch (Exception e)
         {
@@ -148,4 +116,11 @@ public class AuthService : IAuthService
             throw;
         }
     }
+
+    public ErrorResponse? GetLastAuth0Error()
+    {
+        return _lastAuth0Error;
+    }
+
+    
 }
