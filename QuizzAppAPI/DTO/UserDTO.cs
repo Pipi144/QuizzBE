@@ -57,4 +57,10 @@ public class UserDTO
         [JsonProperty("description")]
         public string RoleDescription { get; set; }
     }
+
+    public class AssignUserRoleDTO
+    {
+        public string UserId { get; set; }
+        public string RoleId { get; set; }
+    }
 }

@@ -7,12 +7,13 @@ using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.Service;
 
-public class TokenService: ITokenService
+public class TokenService : ITokenService
 {
     private readonly Auth0Settings _auth0Settings;
     private readonly HttpClient _httpClient;
     private readonly ILogger<TokenService> _logger;
     private ErrorResponse _lastTokenServiceError;
+
     public TokenService(
         IOptions<Auth0Settings> auth0Settings,
         HttpClient httpClient,
@@ -22,6 +23,7 @@ public class TokenService: ITokenService
         _httpClient = httpClient;
         _logger = logger;
     }
+
     public string? ExtractAccessToken(IHeaderDictionary headers)
     {
         var authHeader = headers["Authorization"].FirstOrDefault();
@@ -30,10 +32,11 @@ public class TokenService: ITokenService
             // Extract the token by removing "Bearer " prefix
             return authHeader.Substring("Bearer ".Length).Trim();
         }
+
         return null;
     }
 
-    public async Task<TokenResponseDTO?> GetManageAccessToken()
+    public async Task<TokenResponseDTO?> GetManageAccessToken(string? scope)
     {
         try
         {
@@ -44,10 +47,16 @@ public class TokenService: ITokenService
                 audience = $"https://{_auth0Settings.Domain}/api/v2/",
                 grant_type = "client_credentials",
                 connection = _auth0Settings.Connection,
+                scope = scope
             };
-            
-            var content = new StringContent(JsonConvert.SerializeObject(requestBody),
-                Encoding.UTF8,"application/json");
+
+            var content =
+                new StringContent(
+                    JsonConvert.SerializeObject(requestBody, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    }),
+                    Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync($"https://{_auth0Settings.Domain}/oauth/token", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 

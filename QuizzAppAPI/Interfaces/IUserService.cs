@@ -12,4 +12,6 @@ public interface IUserService
     Task<UserDTO.UserResponseDTO?> GetCurrentUserInfo(string accessToken);
     
     Task<IEnumerable<UserDTO.UserRoleDTO>?> GetAllRoles();
+
+    Task<bool> AssignUserRole(UserDTO.AssignUserRoleDTO assignRoleDTO);
 }

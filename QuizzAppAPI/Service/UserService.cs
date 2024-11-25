@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using QuizzAppAPI.DTO;
@@ -105,12 +106,13 @@ public class UserService : IUserService
     {
         try
         {
-            // Get manage access token
-            var managementTokenResponse = await _tokenService.GetManageAccessToken();
+            // Get manage access token with scope to read all roles
+            var managementTokenResponse = await _tokenService.GetManageAccessToken("read:roles");
             if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
             {
                 // If getting the management token fails, return error details
-                _logger.LogError("Failed to retrieve management token after successful login.");
+                _logger.LogError("Failed to get manage access token.");
+                _lastUserServiceError = _tokenService.GetLastTokenServiceError();
                 return default; // Error details are already set in _lastAuth0Error by PostAuth0Request
             }
 
@@ -131,7 +133,57 @@ public class UserService : IUserService
                 };
                 return default;
             }
+
             return JsonConvert.DeserializeObject<IEnumerable<UserDTO.UserRoleDTO>>(responseContent);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+
+    public async Task<bool> AssignUserRole(UserDTO.AssignUserRoleDTO assignRoleDTO)
+    {
+        try
+        {
+            // Get manage access token with correct scope
+            var managementTokenResponse =
+                await _tokenService.GetManageAccessToken("read:roles update:users create:role_members");
+            if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
+            {
+                // If getting the management token fails, return error details
+                _logger.LogError("Failed to get manage access token.");
+                _lastUserServiceError = _tokenService.GetLastTokenServiceError();
+                return false;
+            }
+
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", managementTokenResponse.AccessToken);
+            var requestBody = new
+            {
+                roles =new[] {assignRoleDTO.RoleId} 
+            };
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody),
+                Encoding.UTF8,"application/json");
+            var response = await _httpClient.PostAsync(
+                $"https://{_auth0Settings.Domain}/api/v2/users/auth0|{assignRoleDTO.UserId}/roles", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(responseContent);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Store the last error details
+                _lastUserServiceError = new ErrorResponse
+                {
+                    StatusCode = (int)response.StatusCode,
+                    Content = responseContent
+                };
+                return default;
+            }
+
+            return true;
         }
         catch (Exception e)
         {
