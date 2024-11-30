@@ -117,5 +117,28 @@ namespace QuizzAppAPI.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+        
+        [HttpGet("get-users")]
+        public async Task<IActionResult> GetAllUsers([FromQuery]UserDTO.GetUserListParamsDTO param)
+        {
+            try
+            {
+                var result = await _userService.GetAllUsers(param);
+                if (result != null) return Ok(result);
+                // Handle errors directly from Auth0
+                var userServiceError = _userService.GetLastUserServiceError();
+                return userServiceError != null
+                    ?
+                    // Forward Auth0 status code and error message
+                    StatusCode(userServiceError.StatusCode, userServiceError.Content)
+                    :
+                    // Fallback if there's no specific error information
+                    BadRequest(new { message = "An unexpected error occurred." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

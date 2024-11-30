@@ -27,11 +27,13 @@ public class TokenService : ITokenService
     public string? ExtractAccessToken(IHeaderDictionary headers)
     {
         var authHeader = headers["Authorization"].FirstOrDefault();
+        Console.WriteLine(headers.Authorization);
         if (authHeader != null && authHeader.StartsWith("Bearer "))
         {
             // Extract the token by removing "Bearer " prefix
             return authHeader.Substring("Bearer ".Length).Trim();
         }
+
 
         return null;
     }
@@ -59,8 +61,6 @@ public class TokenService : ITokenService
                     Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync($"https://{_auth0Settings.Domain}/oauth/token", content);
             var responseContent = await response.Content.ReadAsStringAsync();
-
-            Console.WriteLine(responseContent);
             if (!response.IsSuccessStatusCode)
             {
                 // Store the last error details

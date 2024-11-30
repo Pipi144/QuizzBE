@@ -35,9 +35,11 @@ namespace QuizzAppAPI.Controllers
                 if (result != null) return Ok(result);
                 // Handle errors directly from Auth0
                 var auth0Error = _authService.GetLastAuth0Error();
-                return auth0Error != null ?
+                return auth0Error != null
+                    ?
                     // Forward Auth0 status code and error message
-                    StatusCode(auth0Error.StatusCode, auth0Error.Content) :
+                    StatusCode(auth0Error.StatusCode, auth0Error.Content)
+                    :
                     // Fallback if there's no specific error information
                     BadRequest(new { message = "An unexpected error occurred." });
             }
@@ -63,9 +65,11 @@ namespace QuizzAppAPI.Controllers
                 if (result != null) return Ok(result);
                 // Handle errors directly from Auth0
                 var auth0Error = _authService.GetLastAuth0Error();
-                return auth0Error != null ?
+                return auth0Error != null
+                    ?
                     // Forward Auth0 status code and error message
-                    StatusCode(auth0Error.StatusCode, auth0Error.Content) :
+                    StatusCode(auth0Error.StatusCode, auth0Error.Content)
+                    :
                     // Fallback if there's no specific error information
                     BadRequest(new { message = "An unexpected error occurred." });
             }

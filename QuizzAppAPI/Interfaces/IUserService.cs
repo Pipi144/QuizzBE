@@ -9,9 +9,11 @@ public interface IUserService
 
     Task<bool> DeleteUser(string Id, string accessToken);
 
-    Task<UserDTO.UserResponseDTO?> GetCurrentUserInfo(string accessToken);
+    Task<UserDTO.Auth0CurentUserDTO?> GetCurrentUserInfo(string accessToken);
     
     Task<IEnumerable<UserDTO.UserRoleDTO>?> GetAllRoles();
 
     Task<bool> AssignUserRole(UserDTO.AssignUserRoleDTO assignRoleDTO);
+    
+    Task<UserDTO.Auth0GetUserListResponseDTO?> GetAllUsers(UserDTO.GetUserListParamsDTO userListParams);
 }

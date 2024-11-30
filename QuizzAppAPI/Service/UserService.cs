@@ -29,75 +29,87 @@ public class UserService : IUserService
         _tokenService = tokenService;
     }
 
-
-    public ErrorResponse? GetLastUserServiceError()
+    private void ConfigureHeaders(string accessToken)
     {
-        return _lastUserServiceError;
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
-    public async Task<bool> DeleteUser(string Id, string accessToken)
+    private async Task<bool> HandleResponse(HttpResponseMessage response)
+    {
+        var responseContent = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            _lastUserServiceError = new ErrorResponse
+            {
+                StatusCode = (int)response.StatusCode,
+                Content = responseContent
+            };
+            _logger.LogError("Request failed: {StatusCode}, Response: {Content}", response.StatusCode, responseContent);
+            return false;
+        }
+
+        _logger.LogInformation("Request succeeded. Response: {Response}", responseContent);
+        return true;
+    }
+
+    public ErrorResponse? GetLastUserServiceError() => _lastUserServiceError;
+
+    public async Task<bool> DeleteUser(string id, string accessToken)
     {
         try
         {
-            // Set default headers for every request
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            var response = await _httpClient.DeleteAsync(
-                $"https://{_auth0Settings.Domain}/api/v2/users/{Id}");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseContent);
-            if (!response.IsSuccessStatusCode)
-            {
-                // Store the last error details
-                _lastUserServiceError = new ErrorResponse
-                {
-                    StatusCode = (int)response.StatusCode,
-                    Content = responseContent
-                };
-                return false;
-            }
+            ConfigureHeaders(accessToken);
 
-            _logger.LogInformation("Auth0 Response: {Response}", responseContent);
-
-            return true;
+            var response = await _httpClient.DeleteAsync($"https://{_auth0Settings.Domain}/api/v2/users/{id}");
+            return await HandleResponse(response);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
+            _logger.LogError(ex, "An exception occurred while deleting user: {UserId}", id);
             throw;
         }
     }
 
-    public async Task<UserDTO.UserResponseDTO?> GetCurrentUserInfo(string accessToken)
+    public async Task<UserDTO.Auth0CurentUserDTO?> GetCurrentUserInfo(string accessToken)
     {
         try
         {
-            // Set default headers for every request
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            Console.WriteLine(accessToken);
-            var response = await _httpClient.GetAsync(
-                $"https://{_auth0Settings.Domain}/userinfo");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseContent);
-            if (!response.IsSuccessStatusCode)
+            ConfigureHeaders(accessToken);
+
+            // Fetch user info
+            var userInfoResponse = await _httpClient.GetAsync($"https://{_auth0Settings.Domain}/userinfo");
+            if (!await HandleResponse(userInfoResponse))
+                return default;
+
+            var userInfoContent = await userInfoResponse.Content.ReadAsStringAsync();
+            var userInfo = JsonConvert.DeserializeObject<UserDTO.Auth0CurentUserDTO>(userInfoContent);
+
+            // Fetch user roles
+            var managementTokenResponse =
+                await _tokenService.GetManageAccessToken("read:users read:roles read:role_members");
+            if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
             {
-                // Store the last error details
-                _lastUserServiceError = new ErrorResponse
-                {
-                    StatusCode = (int)response.StatusCode,
-                    Content = responseContent
-                };
+                _logger.LogError("Failed to fetch management token for user roles.");
+                _lastUserServiceError = _tokenService.GetLastTokenServiceError();
                 return default;
             }
 
-            _logger.LogInformation("Auth0 Response: {Response}", responseContent);
+            ConfigureHeaders(managementTokenResponse.AccessToken);
+            var userRolesResponse =
+                await _httpClient.GetAsync($"https://{_auth0Settings.Domain}/api/v2/users/{userInfo?.Sub}/roles");
+            if (!await HandleResponse(userRolesResponse))
+                return default;
 
-            return JsonConvert.DeserializeObject<UserDTO.UserResponseDTO>(responseContent);
+            var userRolesContent = await userRolesResponse.Content.ReadAsStringAsync();
+            userInfo!.UserRoles = JsonConvert.DeserializeObject<List<UserDTO.UserRoleDTO>>(userRolesContent);
+
+            return userInfo;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
+            _logger.LogError(ex, "An exception occurred while fetching current user info.");
             throw;
         }
     }
@@ -106,39 +118,25 @@ public class UserService : IUserService
     {
         try
         {
-            // Get manage access token with scope to read all roles
             var managementTokenResponse = await _tokenService.GetManageAccessToken("read:roles");
             if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
             {
-                // If getting the management token fails, return error details
-                _logger.LogError("Failed to get manage access token.");
+                _logger.LogError("Failed to fetch management token for roles.");
                 _lastUserServiceError = _tokenService.GetLastTokenServiceError();
-                return default; // Error details are already set in _lastAuth0Error by PostAuth0Request
-            }
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", managementTokenResponse.AccessToken);
-            var response = await _httpClient.GetAsync(
-                $"https://{_auth0Settings.Domain}/api/v2/roles");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseContent);
-            if (!response.IsSuccessStatusCode)
-            {
-                // Store the last error details
-                _lastUserServiceError = new ErrorResponse
-                {
-                    StatusCode = (int)response.StatusCode,
-                    Content = responseContent
-                };
                 return default;
             }
 
+            ConfigureHeaders(managementTokenResponse.AccessToken);
+            var response = await _httpClient.GetAsync($"https://{_auth0Settings.Domain}/api/v2/roles");
+            if (!await HandleResponse(response))
+                return default;
+
+            var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<IEnumerable<UserDTO.UserRoleDTO>>(responseContent);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
+            _logger.LogError(ex, "An exception occurred while fetching roles.");
             throw;
         }
     }
@@ -148,42 +146,75 @@ public class UserService : IUserService
     {
         try
         {
-            // Get manage access token with correct scope
             var managementTokenResponse =
                 await _tokenService.GetManageAccessToken("read:roles update:users create:role_members");
             if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
             {
-                // If getting the management token fails, return error details
-                _logger.LogError("Failed to get manage access token.");
+                _logger.LogError("Failed to fetch management token for assigning user roles.");
                 _lastUserServiceError = _tokenService.GetLastTokenServiceError();
                 return false;
             }
 
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", managementTokenResponse.AccessToken);
-            var requestBody = new
-            {
-                roles =new[] {assignRoleDTO.RoleId} 
-            };
-            var content = new StringContent(JsonConvert.SerializeObject(requestBody),
-                Encoding.UTF8,"application/json");
+            ConfigureHeaders(managementTokenResponse.AccessToken);
+            var requestBody = new { roles = new[] { assignRoleDTO.RoleId } };
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8,
+                "application/json");
+
             var response = await _httpClient.PostAsync(
                 $"https://{_auth0Settings.Domain}/api/v2/users/auth0|{assignRoleDTO.UserId}/roles", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseContent);
-            if (!response.IsSuccessStatusCode)
+            return await HandleResponse(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An exception occurred while assigning user roles: {RoleId} to {UserId}",
+                assignRoleDTO.RoleId, assignRoleDTO.UserId);
+            throw;
+        }
+    }
+
+    public async Task<UserDTO.Auth0GetUserListResponseDTO?> GetAllUsers(
+        UserDTO.GetUserListParamsDTO userListParams)
+    {
+        try
+        {
+            Console.WriteLine("PARAMS:", userListParams);
+            var managementTokenResponse =
+                await _tokenService.GetManageAccessToken("read:roles update:users create:role_members");
+            if (managementTokenResponse == null || string.IsNullOrEmpty(managementTokenResponse.AccessToken))
             {
-                // Store the last error details
-                _lastUserServiceError = new ErrorResponse
-                {
-                    StatusCode = (int)response.StatusCode,
-                    Content = responseContent
-                };
+                _logger.LogError("Failed to fetch management token for assigning user roles.");
+                _lastUserServiceError = _tokenService.GetLastTokenServiceError();
                 return default;
             }
 
-            return true;
+            ConfigureHeaders(managementTokenResponse.AccessToken);
+            // Construct query string parameters
+            var queryString =
+                new StringBuilder(
+                    $"page={userListParams.Page}&per_page={userListParams.PageSize}&include_totals=true&search_engine=v3");
+            if (!string.IsNullOrWhiteSpace(userListParams.Search))
+            {
+                var escapedSearch = Uri.EscapeDataString(userListParams.Search);
+                if (escapedSearch.Length >= 3)
+                {
+                    // Wildcard search for substring matching (requires at least 3 characters)
+                    queryString.Append($"&q=(email:{escapedSearch}* OR name:{escapedSearch}*)");
+                }
+                else
+                {
+                    // For shorter search strings, fallback to exact match
+                    queryString.Append($"&q=(email:\"{escapedSearch}\" OR name:\"{escapedSearch}\")");
+                }
+            }
+
+            // Make the GET request
+            var response = await _httpClient.GetAsync($"https://{_auth0Settings.Domain}/api/v2/users?{queryString}");
+            if (!await HandleResponse(response))
+                return null;
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("RESP:", responseContent);
+            return JsonConvert.DeserializeObject<UserDTO.Auth0GetUserListResponseDTO>(responseContent);
         }
         catch (Exception e)
         {
