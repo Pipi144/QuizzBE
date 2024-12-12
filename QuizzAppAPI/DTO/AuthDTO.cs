@@ -3,13 +3,13 @@ using Newtonsoft.Json.Serialization;
 
 namespace QuizzAppAPI.DTO;
 
-public class LoginDTO
+public class LoginDto
 {
     public string Email { get; set; }
     public string Password { get; set; }
 }
 
-public class TokenResponseDTO
+public class TokenResponseDto
 {
     [JsonProperty("access_token")]
     public string AccessToken { get; set; }
@@ -19,7 +19,7 @@ public class TokenResponseDTO
     public string TokenType { get; set; }
 }
 
-public class RegisterDTO
+public class RegisterDto
 {
     public string Email { get; set; }
     public string Password { get; set; }
@@ -30,7 +30,7 @@ public class RegisterDTO
     public string? NickName { get; set; }
 }
 
-public class RegisterResponseDTO
+public class RegisterResponseDto
 {
     [JsonProperty("_id")] 
     public string Id { get; set; }
@@ -51,4 +51,13 @@ public class RegisterResponseDTO
 
     [JsonProperty("picture")] 
     public string? Picture { get; set; }
+}
+
+
+public class Auth0ErrorResponseDto
+{
+    [JsonProperty("error")] 
+    public string ErrorTitle { get; set; }
+    [JsonProperty("error_description")] 
+    public string ErrorDescription { get; set; }
 }

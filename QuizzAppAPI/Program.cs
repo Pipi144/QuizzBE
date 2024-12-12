@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuizzAppAPI.Interfaces;
+using QuizzAppAPI.Middleware;
 using QuizzAppAPI.Models;
 using QuizzAppAPI.QuizAppDbContext;
 using QuizzAppAPI.Service;
@@ -116,7 +117,7 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API v1");
     });
 }
-
+app.UseMiddleware<AccessTokenValidationMiddleware>();
 app.UseRouting();
 app.UseHttpsRedirection();
 

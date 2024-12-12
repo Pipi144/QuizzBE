@@ -3,41 +3,35 @@ using Newtonsoft.Json;
 
 namespace QuizzAppAPI.DTO;
 
-public class UserDTO
+public class UserDto
 {
-    public class Auth0CurentUserDTO
+    public class Auth0BasicUserDto
     {
-        [JsonProperty("sub")] public string? Sub { get; set; }
-
+        [JsonProperty("user_id")] public string? UserId { get; set; }
         [JsonProperty("name")] public string? Name { get; set; }
-
         [JsonProperty("nickname")] public string? NickName { get; set; }
-
         [JsonProperty("family_name")] public string? FamilyName { get; set; }
-
         [JsonProperty("given_name")] public string? GivenName { get; set; }
-
-        [JsonProperty("middle_name")] public string? MiddleName { get; set; }
-
         [JsonProperty("email")] public string? Email { get; set; }
-
         [JsonProperty("email_verified")] public bool EmailVerified { get; set; }
+        [JsonProperty("updated_at")] public string? UpdatedAt { get; set; }
+        [JsonProperty("picture")] public string? PictureUrl { get; set; }
+        public IEnumerable<UserRoleDto>? UserRoles { get; set; }
+    }
 
+    public class Auth0CurentUserDto : Auth0BasicUserDto
+    {
+        [JsonProperty("sub")] public string? UserId { get; set; }
         [JsonProperty("gender")] public string? Gender { get; set; }
-
         [JsonProperty("birthdate")] public string? BirthDate { get; set; }
-
         [JsonProperty("phone_number")] public int? PhoneNumber { get; set; }
-
         [JsonProperty("phone_number_verified")]
         public bool? PhoneNumberVerified { get; set; }
 
-        [JsonProperty("updated_at")] public string? UpdateAt { get; set; }
-
-        public IEnumerable<UserRoleDTO>? UserRoles { get; set; }
+        
     }
 
-    public class UserRoleDTO
+    public class UserRoleDto
     {
         [JsonProperty("id")] public string RoleId { get; set; }
 
@@ -46,45 +40,34 @@ public class UserDTO
         [JsonProperty("description")] public string RoleDescription { get; set; }
     }
 
-    public class AssignUserRoleDTO
+    public class AssignUserRoleDto
     {
         public string UserId { get; set; }
         public string RoleId { get; set; }
     }
+    
 
-    public class Auth0UserListItemDTO
-    {
-        [JsonProperty("email")] public string? Email { get; set; }
-
-        [JsonProperty("email_verified")] public string? EmailVerified { get; set; }
-
-        [JsonProperty("name")] public string? Name { get; set; }
-
-        [JsonProperty("created_at")] public string? CreatedAt { get; set; }
-
-        [JsonProperty("updated_at")] public string? UpdatedAt { get; set; }
-
-        [JsonProperty("picture")] public string? PictureUrl { get; set; }
-
-        [JsonProperty("nickname")] public string? NickName { get; set; }
-
-        [JsonProperty("last_login")] public string? LastLogin { get; set; }
-    }
-
-    public class Auth0GetUserListResponseDTO
+    public class Auth0GetUserListResponseDto
     {
         [JsonProperty("start")] public int Start { get; set; }
         [JsonProperty("limit")] public int PageSize { get; set; }
         [JsonProperty("total")] public int Total { get; set; }
 
         [JsonProperty("users")]
-        public IEnumerable<Auth0UserListItemDTO> Users { get; set; } = new List<Auth0UserListItemDTO>();
+        public IEnumerable<Auth0BasicUserDto> Users { get; set; } = new List<Auth0BasicUserDto>();
     }
 
-    public class GetUserListParamsDTO
+    public class GetUserListParamsDto
     {
         public int? Page { get; set; }
         public int? PageSize { get; set; }
         public string? Search { get; set; } = null;
+    }
+
+    public class UpdateUserParamsDto
+    {
+        public string? Name { get; set; }
+        public string? NickName { get; set; }   
+        public string? RoleId { get; set; }
     }
 }

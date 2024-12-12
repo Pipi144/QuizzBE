@@ -44,11 +44,12 @@ public class AuthService : IAuthService
             Console.WriteLine(responseContent);
             if (!response.IsSuccessStatusCode)
             {
+                var error = JsonConvert.DeserializeObject<Auth0ErrorResponseDto>(responseContent);
                 // Store the last error details
                 _lastAuth0Error = new ErrorResponse
                 {
                     StatusCode = (int)response.StatusCode,
-                    Content = responseContent
+                    Content = error?.ErrorDescription ?? responseContent,
                 };
                 return default;
             }
@@ -66,7 +67,7 @@ public class AuthService : IAuthService
 
     
 
-    public async Task<RegisterResponseDTO?> Register(RegisterDTO data)
+    public async Task<RegisterResponseDto?> Register(RegisterDto data)
     {
         var requestBody = new
         {
@@ -83,13 +84,13 @@ public class AuthService : IAuthService
             nickname = !string.IsNullOrEmpty(data.NickName) ? data.NickName : null
         };
 
-        return await PostAuth0Request<RegisterResponseDTO>(
+        return await PostAuth0Request<RegisterResponseDto>(
             $"https://{_auth0Settings.Domain}/dbconnections/signup",
             requestBody
         );
     }
 
-    public async Task<TokenResponseDTO?> Login(LoginDTO data)
+    public async Task<TokenResponseDto?> Login(LoginDto data)
     {
         try
         {
@@ -105,7 +106,7 @@ public class AuthService : IAuthService
                 scope = "openid profile email"
             };
             // Call the login endpoint to get user-specific token
-            return await PostAuth0Request<TokenResponseDTO>(
+            return await PostAuth0Request<TokenResponseDto>(
                 $"https://{_auth0Settings.Domain}/oauth/token",
                 requestBody
             );
@@ -124,3 +125,5 @@ public class AuthService : IAuthService
 
     
 }
+
+       

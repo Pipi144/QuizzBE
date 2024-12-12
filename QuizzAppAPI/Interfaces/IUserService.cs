@@ -7,13 +7,15 @@ public interface IUserService
 {
     ErrorResponse? GetLastUserServiceError();
 
-    Task<bool> DeleteUser(string Id, string accessToken);
+    Task<bool> DeleteUser(string id);
 
-    Task<UserDTO.Auth0CurentUserDTO?> GetCurrentUserInfo(string accessToken);
+    Task<UserDto.Auth0CurentUserDto?> GetCurrentUserInfo(string accessToken);
     
-    Task<IEnumerable<UserDTO.UserRoleDTO>?> GetAllRoles();
-
-    Task<bool> AssignUserRole(UserDTO.AssignUserRoleDTO assignRoleDTO);
+    Task<IEnumerable<UserDto.UserRoleDto>?> GetAllRoles();
     
-    Task<UserDTO.Auth0GetUserListResponseDTO?> GetAllUsers(UserDTO.GetUserListParamsDTO userListParams);
+    Task<bool> UpdateUserDetails(string id, UserDto.UpdateUserParamsDto updateUserParamsDto);
+    
+    Task<UserDto.Auth0GetUserListResponseDto?> GetAllUsers(UserDto.GetUserListParamsDto userListParams);
+    
+    Task<UserDto.Auth0BasicUserDto?> GetUserById(string id);
 }

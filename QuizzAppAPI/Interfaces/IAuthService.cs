@@ -5,9 +5,9 @@ namespace QuizzAppAPI.Interfaces;
 
 public interface IAuthService
 {
-    Task<TokenResponseDTO?> Login(LoginDTO data);
+    Task<TokenResponseDto?> Login(LoginDto data);
 
-    Task<RegisterResponseDTO?> Register(RegisterDTO data);
+    Task<RegisterResponseDto?> Register(RegisterDto data);
 
     ErrorResponse? GetLastAuth0Error();
     

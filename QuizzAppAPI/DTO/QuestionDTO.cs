@@ -2,7 +2,7 @@ using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.DTO;
 
-public class QuestionDTO
+public class QuestionDto
 {
     public int Id { get; set; }
     public string QuestionText { get; set; }

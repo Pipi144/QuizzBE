@@ -38,7 +38,7 @@ public class TokenService : ITokenService
         return null;
     }
 
-    public async Task<TokenResponseDTO?> GetManageAccessToken(string? scope)
+    public async Task<TokenResponseDto?> GetManageAccessToken(string? scope)
     {
         try
         {
@@ -51,7 +51,6 @@ public class TokenService : ITokenService
                 connection = _auth0Settings.Connection,
                 scope = scope
             };
-
             var content =
                 new StringContent(
                     JsonConvert.SerializeObject(requestBody, new JsonSerializerSettings
@@ -63,18 +62,19 @@ public class TokenService : ITokenService
             var responseContent = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
+                var error = JsonConvert.DeserializeObject<Auth0ErrorResponseDto>(responseContent);
                 // Store the last error details
                 _lastTokenServiceError = new ErrorResponse
                 {
                     StatusCode = (int)response.StatusCode,
-                    Content = responseContent
+                    Content = error?.ErrorDescription ?? responseContent
                 };
                 return default;
             }
 
             _logger.LogInformation("Auth0 Response: {Response}", responseContent);
 
-            return JsonConvert.DeserializeObject<TokenResponseDTO>(responseContent);
+            return JsonConvert.DeserializeObject<TokenResponseDto>(responseContent);
         }
         catch (Exception e)
         {

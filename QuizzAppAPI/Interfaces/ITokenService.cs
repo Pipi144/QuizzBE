@@ -6,7 +6,7 @@ namespace QuizzAppAPI.Interfaces;
 public interface ITokenService
 {
     string? ExtractAccessToken(IHeaderDictionary headers);
-    Task<TokenResponseDTO?> GetManageAccessToken(string? scope = null);
+    Task<TokenResponseDto?> GetManageAccessToken(string? scope = null);
     
     ErrorResponse? GetLastTokenServiceError();
 }

@@ -2,24 +2,23 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using QuizzAppAPI.DTO;
 using QuizzAppAPI.Interfaces;
+using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
-
+    public class UserController : ApiControllerBase
     {
         private readonly IUserService _userService;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<UserController> _logger;
         private readonly ITokenService _tokenService;
 
-
-        public UserController(IUserService userService, ILogger<AuthController> logger, ITokenService tokenService)
+        public UserController(IUserService userService, ILogger<UserController> logger, ITokenService tokenService)
         {
             _userService = userService;
-            _tokenService = tokenService;
             _logger = logger;
+            _tokenService = tokenService;
         }
 
         [HttpGet("current-user-info")]
@@ -28,22 +27,21 @@ namespace QuizzAppAPI.Controllers
             try
             {
                 var accessToken = _tokenService.ExtractAccessToken(Request.Headers);
-
                 if (accessToken == null)
-                    return Unauthorized("Access token is missing or invalid.");
+                {
+                    return HandleError("Access token is missing or invalid.", StatusCodes.Status401Unauthorized);
+                }
+
                 var result = await _userService.GetCurrentUserInfo(accessToken);
                 if (result != null) return Ok(result);
-                // Handle errors directly from Auth0
+
                 var userServiceError = _userService.GetLastUserServiceError();
-                return userServiceError != null ?
-                    // Forward Auth0 status code and error message
-                    StatusCode(userServiceError.StatusCode, userServiceError.Content) :
-                    // Fallback if there's no specific error information
-                    BadRequest(new { message = "An unexpected error occurred." });
+                return HandleServiceError(userServiceError);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "An error occurred while retrieving user info.");
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -52,23 +50,21 @@ namespace QuizzAppAPI.Controllers
         {
             try
             {
-                var accessToken = _tokenService.ExtractAccessToken(Request.Headers);
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    return HandleError("User ID is required.", StatusCodes.Status400BadRequest);
+                }
 
-                if (accessToken == null)
-                    return Unauthorized("Access token is missing or invalid.");
-                var result = await _userService.DeleteUser(id, accessToken);
-                if (result != false) return NoContent();
-                // Handle errors directly from Auth0
+                var result = await _userService.DeleteUser(id);
+                if (result) return NoContent();
+
                 var userServiceError = _userService.GetLastUserServiceError();
-                return userServiceError != null ?
-                    // Forward Auth0 status code and error message
-                    StatusCode(userServiceError.StatusCode, userServiceError.Content) :
-                    // Fallback if there's no specific error information
-                    BadRequest(new { message = "An unexpected error occurred." });
+                return HandleServiceError(userServiceError);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "An error occurred while deleting user with ID {UserId}.", id);
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -79,66 +75,93 @@ namespace QuizzAppAPI.Controllers
             {
                 var result = await _userService.GetAllRoles();
                 if (result != null) return Ok(result);
-                // Handle errors directly from Auth0
+
                 var userServiceError = _userService.GetLastUserServiceError();
-                return userServiceError != null
-                    ?
-                    // Forward Auth0 status code and error message
-                    StatusCode(userServiceError.StatusCode, userServiceError.Content)
-                    :
-                    // Fallback if there's no specific error information
-                    BadRequest(new { message = "An unexpected error occurred." });
+                return HandleServiceError(userServiceError);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "An error occurred while retrieving user roles.");
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
             }
         }
-        
-        [HttpPost("assign-role")]
-        public async Task<IActionResult> AssignRoleToUser(UserDTO.AssignUserRoleDTO data)
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(string id)
         {
             try
             {
-                var result = await _userService.AssignUserRole(data);
-                if (result) return NoContent();
-                // Handle errors directly from Auth0
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    return HandleError("User ID is required.", StatusCodes.Status400BadRequest);
+                }
+
+                var result = await _userService.GetUserById(id);
+                if (result != null) return Ok(result);
+
                 var userServiceError = _userService.GetLastUserServiceError();
-                return userServiceError != null
-                    ?
-                    // Forward Auth0 status code and error message
-                    StatusCode(userServiceError.StatusCode, userServiceError.Content)
-                    :
-                    // Fallback if there's no specific error information
-                    BadRequest(new { message = "An unexpected error occurred." });
+                return HandleServiceError(userServiceError);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "An error occurred while retrieving user with ID {UserId}.", id);
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
             }
         }
-        
-        [HttpGet("get-users")]
-        public async Task<IActionResult> GetAllUsers([FromQuery]UserDTO.GetUserListParamsDTO param)
+
+        [HttpGet("")]
+        public async Task<IActionResult> GetAllUsers([FromQuery] UserDto.GetUserListParamsDto param)
         {
             try
             {
                 var result = await _userService.GetAllUsers(param);
                 if (result != null) return Ok(result);
-                // Handle errors directly from Auth0
+
                 var userServiceError = _userService.GetLastUserServiceError();
-                return userServiceError != null
-                    ?
-                    // Forward Auth0 status code and error message
-                    StatusCode(userServiceError.StatusCode, userServiceError.Content)
-                    :
-                    // Fallback if there's no specific error information
-                    BadRequest(new { message = "An unexpected error occurred." });
+                return HandleServiceError(userServiceError);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "An error occurred while retrieving users.");
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
             }
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateUser(string id,
+            [FromBody] UserDto.UpdateUserParamsDto updateUserParamsDto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    return HandleError("User ID is required.", StatusCodes.Status400BadRequest);
+                }
+
+                if (updateUserParamsDto == null)
+                {
+                    return HandleError("Request body cannot be null.", StatusCodes.Status400BadRequest);
+                }
+
+                var updateResult = await _userService.UpdateUserDetails(id, updateUserParamsDto);
+                if (updateResult) return NoContent();
+
+                var userServiceError = _userService.GetLastUserServiceError();
+                return HandleServiceError(userServiceError);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating user with ID {UserId}.", id);
+                return HandleError("Internal server error.", StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        // Helper method for handling service errors
+        private IActionResult HandleServiceError(ErrorResponse? serviceError)
+        {
+            return serviceError != null
+                ? HandleError(serviceError.Content, serviceError.StatusCode)
+                : HandleError("An unexpected error occurred.", StatusCodes.Status400BadRequest);
         }
     }
 }
