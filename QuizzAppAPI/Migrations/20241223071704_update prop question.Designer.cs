@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuizzAppAPI.QuizAppDbContext;
@@ -11,9 +12,11 @@ using QuizzAppAPI.QuizAppDbContext;
 namespace QuizzAppAPI.Migrations
 {
     [DbContext(typeof(QuizDbContext))]
-    partial class QuizDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241223071704_update prop question")]
+    partial class updatepropquestion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,10 +54,7 @@ namespace QuizzAppAPI.Migrations
             modelBuilder.Entity("QuizzAppAPI.Models.QuestionOption", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("IsCorrectAnswer")
                         .HasColumnType("boolean");
@@ -67,8 +67,6 @@ namespace QuizzAppAPI.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("QuestionId");
 
                     b.ToTable("QuestionOptions");
                 });
@@ -136,7 +134,7 @@ namespace QuizzAppAPI.Migrations
                 {
                     b.HasOne("QuizzAppAPI.Models.Question", "Question")
                         .WithMany("QuestionOptions")
-                        .HasForeignKey("QuestionId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

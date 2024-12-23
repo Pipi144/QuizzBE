@@ -4,13 +4,13 @@ using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.Mappers;
 
-public class QuestionMapper: Profile
+public class QuestionMapper : Profile
 {
     public QuestionMapper()
     {
         // Map from Question entity to QuestionBasicDto
         CreateMap<Question, QuestionBasicDto>();
-        
+
         // Map from QuestionOption entity to QuestionOptionBasicDto
         CreateMap<QuestionOption, QuestionOptionBasicDto>();
 
@@ -22,18 +22,14 @@ public class QuestionMapper: Profile
         CreateMap<AddQuestionDataDto, Question>()
             .ForMember(dest => dest.QuestionOptions, opt => opt.MapFrom(src => src.QuestionOptions));
 
-        // Map UpdateQuestionDataDto -> Question
-        CreateMap<UpdateQuestionDataDto, Question>()
-            .ForMember(dest => dest.QuestionOptions, opt => opt.Ignore());
-
+        CreateMap<AddQuestionOptionDataDto, QuestionOption>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+        
         // Map UpdateQuestionOptionDataDto -> QuestionOption
         CreateMap<UpdateQuestionOptionDataDto, QuestionOption>();
-        
+
         // Map from QuestionOption to QuestionOptionDto
         CreateMap<QuestionOption, QuestionOptionDto>();
-
-        // Map from AddQuestionOptionDataDto to QuestionOption
-        CreateMap<AddQuestionOptionDataDto, QuestionOption>();
 
         // Map from QuestionOptionDto to QuestionOption for updates
         CreateMap<QuestionOptionDto, QuestionOption>();

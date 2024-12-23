@@ -1,3 +1,4 @@
+using Microsoft.Build.Framework;
 using QuizzAppAPI.Models;
 
 namespace QuizzAppAPI.DTO;
@@ -14,6 +15,7 @@ public class QuestionOptionBasicDto
     public string OptionText { get; set; }
     public bool IsCorrectAnswer { get; set; }
 }
+
 public class QuestionDetailDto : QuestionBasicDto
 {
     public ICollection<QuestionOptionBasicDto> QuestionOptions { get; set; }
@@ -21,9 +23,19 @@ public class QuestionDetailDto : QuestionBasicDto
 
 public class AddQuestionDataDto
 {
-    public string QuestionText { get; set; }
-    public string CreatedByUserId { get; set; }
-    public ICollection<AddQuestionOptionDataDto> QuestionOptions { get; set; }
+    [Required] public string QuestionText { get; set; }
+
+    [Required] public string CreatedByUserId { get; set; }
+
+    public ICollection<AddQuestionOptionDataDto> QuestionOptions { get; set; } = new List<AddQuestionOptionDataDto>();
+}
+
+public class AddQuestionOptionDataDto
+{
+    [Required]
+    public string OptionText { get; set; }
+
+    public bool IsCorrectAnswer { get; set; }
 }
 
 public class UpdateQuestionDataDto
@@ -38,15 +50,10 @@ public class UpdateQuestionOptionDataDto
     public string OptionText { get; set; }
     public bool IsCorrectAnswer { get; set; }
 }
+
 public class QuestionOptionDto
 {
     public int Id { get; set; }
-    public string OptionText { get; set; }
-    public bool IsCorrectAnswer { get; set; }
-}
-
-public class AddQuestionOptionDataDto
-{
     public string OptionText { get; set; }
     public bool IsCorrectAnswer { get; set; }
 }

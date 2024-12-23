@@ -29,7 +29,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
-    
+
     // Define the security scheme
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -40,7 +40,7 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         Description = "Please enter a valid token"
     });
-    
+
     // Make sure Swagger knows that this is a required security requirement
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -61,11 +61,10 @@ builder.Services.AddSwaggerGen(c =>
 
 //Register Db
 builder.Services.AddDbContext<QuizDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")).EnableSensitiveDataLogging());
 
 // Register AutoMapper with assembly scanning
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
 
 
 builder.Services.AddAuthorization();
@@ -80,7 +79,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = "https://dev-hpou0jp8hflr02wz.au.auth0.com/";
     options.Audience = "https://localhost:7285/";
-    
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         NameClaimType = ClaimTypes.NameIdentifier
@@ -89,17 +88,17 @@ builder.Services.AddAuthentication(options =>
 // Scope configuration
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("ReadUsers", policy => policy.Requirements.Add(new 
+    options.AddPolicy("ReadUsers", policy => policy.Requirements.Add(new
         HasScopeRequirement("read:users", domain)));
-    options.AddPolicy("EditUsers", policy => policy.Requirements.Add(new 
+    options.AddPolicy("EditUsers", policy => policy.Requirements.Add(new
         HasScopeRequirement("write:users", domain)));
-    options.AddPolicy("DeleteUsers", policy => policy.Requirements.Add(new 
+    options.AddPolicy("DeleteUsers", policy => policy.Requirements.Add(new
         HasScopeRequirement("delete:users", domain)));
-    options.AddPolicy("ReadQuiz", policy => policy.Requirements.Add(new 
+    options.AddPolicy("ReadQuiz", policy => policy.Requirements.Add(new
         HasScopeRequirement("read:quiz", domain)));
-    options.AddPolicy("EditQuiz", policy => policy.Requirements.Add(new 
+    options.AddPolicy("EditQuiz", policy => policy.Requirements.Add(new
         HasScopeRequirement("write:quiz", domain)));
-    options.AddPolicy("DeleteQuiz", policy => policy.Requirements.Add(new 
+    options.AddPolicy("DeleteQuiz", policy => policy.Requirements.Add(new
         HasScopeRequirement("delete:quiz", domain)));
 });
 
@@ -121,13 +120,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API v1");
-    });
+    app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API v1"); });
 }
+
 app.UseMiddleware<AccessTokenValidationMiddleware>();
-app.UseMiddleware<ErrorHandlingMiddleware>();  // Register global error handler
+app.UseMiddleware<ErrorHandlingMiddleware>(); // Register global error handler
 app.UseRouting();
 app.UseHttpsRedirection();
 

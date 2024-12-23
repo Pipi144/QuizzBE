@@ -54,43 +54,42 @@ namespace QuizzAppAPI.Repositories
         {
             try
             {
-                // Attach related QuestionOptions to the context
-                if (question.QuestionOptions.Any())
-                {
-                    foreach (var option in question.QuestionOptions)
-                    {
-                        _context.Entry(option).State = EntityState.Added;
-                    }
-                }
-
-                _context.Questions.Add(question);
+                await _context.Questions.AddAsync(question);
                 await _context.SaveChangesAsync();
-
                 return question;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding the question.");
                 throw new ApplicationException("An error occurred while adding the question.", ex);
             }
         }
 
         public async Task<Question> UpdateQuestionAsync(Question question)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
+                var existingOptions = _context.QuestionOptions.Where(qo => qo.QuestionId == question.Id);
+                _context.QuestionOptions.RemoveRange(existingOptions);
+
+                if (question.QuestionOptions != null)
+                {
+                    foreach (var option in question.QuestionOptions)
+                    {
+                        option.Id = 0; // Ensure EF treats these as new entities
+                        _context.QuestionOptions.Add(option);
+                    }
+                }
+
                 _context.Questions.Update(question);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return question;
             }
-            catch (DbUpdateException ex)
+            catch
             {
-                _logger.LogError(ex, "Database update failed for question with ID {Id}", question.Id);
-                throw new ApplicationException("An error occurred while updating the database.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while updating question with ID {Id}", question.Id);
+                await transaction.RollbackAsync();
                 throw;
             }
         }
@@ -102,7 +101,7 @@ namespace QuizzAppAPI.Repositories
                 var question = await _context.Questions.FindAsync(id);
                 if (question == null)
                 {
-                    return false;  // Return false if the question does not exist
+                    return false; // Return false if the question does not exist
                 }
 
                 _context.Questions.Remove(question);
@@ -128,17 +127,18 @@ namespace QuizzAppAPI.Repositories
                 if (options.Any())
                 {
                     _context.QuestionOptions.RemoveRange(options);
-                    await _context.SaveChangesAsync();
+
                 }
             }
             catch (NotFoundException ex)
             {
                 _logger.LogError(ex, "Question not found for deletion of options.");
-                throw;  // Rethrow the NotFoundException
+                throw; // Rethrow the NotFoundException
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while deleting question options for question ID {QuestionId}.", questionId);
+                _logger.LogError(ex, "Error occurred while deleting question options for question ID {QuestionId}.",
+                    questionId);
                 throw new ApplicationException("An error occurred while deleting question options.", ex);
             }
         }
