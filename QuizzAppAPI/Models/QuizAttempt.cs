@@ -9,5 +9,8 @@ public class QuizAttempt
     public DateTime CreatedAt { get; set; }
     [Required]
     public string AttemptByUserId { get; set; }
+    
+    [Required]
+    public int QuizId { get; set; }
     public Quiz Quiz { get; set; }
 }
