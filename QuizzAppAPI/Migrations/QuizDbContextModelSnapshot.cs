@@ -30,8 +30,9 @@ namespace QuizzAppAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("QuestionText")
                         .IsRequired()
@@ -42,8 +43,6 @@ namespace QuizzAppAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedByUserId");
-
                     b.HasIndex("QuizId");
 
                     b.ToTable("Questions");
@@ -52,10 +51,7 @@ namespace QuizzAppAPI.Migrations
             modelBuilder.Entity("QuizzAppAPI.Models.QuestionOption", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("IsCorrectAnswer")
                         .HasColumnType("boolean");
@@ -64,12 +60,7 @@ namespace QuizzAppAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("QuestionId");
 
                     b.ToTable("QuestionOptions");
                 });
@@ -82,8 +73,9 @@ namespace QuizzAppAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("QuizName")
                         .IsRequired()
@@ -93,8 +85,6 @@ namespace QuizzAppAPI.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
 
                     b.ToTable("Quizzes");
                 });
@@ -107,8 +97,9 @@ namespace QuizzAppAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AttemptById")
-                        .HasColumnType("integer");
+                    b.Property<string>("AttemptByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -121,89 +112,36 @@ namespace QuizzAppAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AttemptById");
-
                     b.HasIndex("QuizId");
 
                     b.ToTable("QuizAttempts");
                 });
 
-            modelBuilder.Entity("QuizzAppAPI.Models.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UserRole")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("User");
-                });
-
             modelBuilder.Entity("QuizzAppAPI.Models.Question", b =>
                 {
-                    b.HasOne("QuizzAppAPI.Models.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("QuizzAppAPI.Models.Quiz", null)
                         .WithMany("Questions")
                         .HasForeignKey("QuizId");
-
-                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("QuizzAppAPI.Models.QuestionOption", b =>
                 {
                     b.HasOne("QuizzAppAPI.Models.Question", "Question")
                         .WithMany("QuestionOptions")
-                        .HasForeignKey("QuestionId")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("QuizzAppAPI.Models.Quiz", b =>
-                {
-                    b.HasOne("QuizzAppAPI.Models.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedByUser");
-                });
-
             modelBuilder.Entity("QuizzAppAPI.Models.QuizAttempt", b =>
                 {
-                    b.HasOne("QuizzAppAPI.Models.User", "AttemptBy")
-                        .WithMany()
-                        .HasForeignKey("AttemptById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("QuizzAppAPI.Models.Quiz", "Quiz")
                         .WithMany("QuizAttempts")
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("AttemptBy");
 
                     b.Navigation("Quiz");
                 });

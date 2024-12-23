@@ -1,111 +1,148 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using QuizzAppAPI.DTO;
 using QuizzAppAPI.Models;
-using QuizzAppAPI.QuizAppDbContext;
+using Microsoft.Extensions.Logging;
+using QuizzAppAPI.Interfaces;
 
 namespace QuizzAppAPI.Controllers
 {
     [Route("api/question")]
     [ApiController]
-    [Authorize]
     public class QuestionController : ControllerBase
     {
-        private readonly QuizDbContext _context;
+        private readonly IQuestionService _questionService;
+        private readonly ILogger<QuestionController> _logger;
 
-        public QuestionController(QuizDbContext context)
+        public QuestionController(IQuestionService questionService, ILogger<QuestionController> logger)
         {
-            _context = context;
+            _questionService = questionService;
+            _logger = logger;
         }
 
-        // GET: api/Question
+        // GET: api/question
         [HttpGet]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<Question>>> GetQuestions()
+        public async Task<ActionResult<IEnumerable<QuestionBasicDto>>> GetQuestionsByUserId([FromQuery] string userId)
         {
-            return await _context.Questions.ToListAsync();
+            try
+            {
+                var questions = await _questionService.GetQuestionsByCreatedByUserIdAsync(userId);
+                return Ok(questions);
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.LogError(ex, "Questions not found for user {UserId}", userId);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred.");
+                return StatusCode(500, new { message = "An unexpected error occurred." });
+            }
         }
 
-        // GET: api/Question/5
+        // GET: api/question/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Question>> GetQuestion(int id)
+        public async Task<ActionResult<QuestionDetailDto>> GetQuestion(int id)
         {
-            var question = await _context.Questions.FindAsync(id);
-
-            if (question == null)
+            try
             {
-                return NotFound();
+                var question = await _questionService.GetQuestionByIdAsync(id);
+                return Ok(question);
             }
-
-            return question;
+            catch (NotFoundException ex)
+            {
+                _logger.LogError(ex, "Question with ID {Id} not found.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred.");
+                return StatusCode(500, new { message = "An unexpected error occurred." });
+            }
         }
 
-        // PUT: api/Question/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuestion(int id, Question question)
+        // POST: api/question
+        [HttpPost]
+        public async Task<ActionResult<QuestionDetailDto>> CreateQuestion([FromBody] AddQuestionDataDto addQuestionDto)
         {
-            if (id != question.Id)
+            try
             {
-                return BadRequest();
+                var createdQuestion = await _questionService.CreateQuestionAsync(addQuestionDto);
+                return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
             }
+            catch (ValidationException ex)
+            {
+                _logger.LogError(ex, "Validation failed while creating question.");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while creating the question.");
+                return StatusCode(500, new { message = "An unexpected error occurred while creating the question." });
+            }
+        }
 
-            _context.Entry(question).State = EntityState.Modified;
+        // PUT: api/question/5
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateQuestion(int id, [FromBody] UpdateQuestionDataDto updateQuestionDto)
+        {
+            if (id != updateQuestionDto.Id)
+            {
+                return BadRequest(new { message = "The question ID does not match the route parameter." });
+            }
 
             try
             {
-                await _context.SaveChangesAsync();
+                var updatedQuestion = await _questionService.UpdateQuestionAsync(updateQuestionDto);
+
+                if (updatedQuestion == null)
+                {
+                    return NotFound(new { message = $"Question with ID {id} not found." });
+                }
+
+                return Ok(updatedQuestion);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (ValidationException ex)
             {
-                if (!QuestionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                _logger.LogError(ex, "Validation error while updating question.");
+                return BadRequest(new { message = ex.Message });
             }
-
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Question not found while updating.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while updating question.");
+                return StatusCode(500, new { message = "An unexpected error occurred while updating the question." });
+            }
         }
-
-        // POST: api/Question
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Question>> PostQuestion(Question question)
-        {
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetQuestion", new { id = question.Id }, question);
-        }
-
-        // DELETE: api/Question/5
+        
+        
+        // DELETE: api/question/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
-            var question = await _context.Questions.FindAsync(id);
-            if (question == null)
+            try
             {
-                return NotFound();
+                await _questionService.DeleteQuestionAsync(id);
+                return NoContent();
             }
-
-            _context.Questions.Remove(question);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool QuestionExists(int id)
-        {
-            return _context.Questions.Any(e => e.Id == id);
+            catch (NotFoundException ex)
+            {
+                _logger.LogError(ex, "Question with ID {Id} not found for deletion.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while deleting the question.");
+                return StatusCode(500, new { message = "An unexpected error occurred while deleting the question." });
+            }
         }
     }
 }

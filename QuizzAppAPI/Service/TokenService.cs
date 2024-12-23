@@ -27,7 +27,6 @@ public class TokenService : ITokenService
     public string? ExtractAccessToken(IHeaderDictionary headers)
     {
         var authHeader = headers["Authorization"].FirstOrDefault();
-        Console.WriteLine(headers.Authorization);
         if (authHeader != null && authHeader.StartsWith("Bearer "))
         {
             // Extract the token by removing "Bearer " prefix

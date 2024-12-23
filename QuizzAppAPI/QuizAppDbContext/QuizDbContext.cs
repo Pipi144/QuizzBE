@@ -14,4 +14,14 @@ public class QuizDbContext:DbContext
     public DbSet<Question> Questions { get; set; }
     public DbSet<QuestionOption> QuestionOptions { get; set; }
     public DbSet<QuizAttempt> QuizAttempts { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure Question -> QuestionOption relationship with Cascade Delete
+        modelBuilder.Entity<Question>()
+            .HasMany(q => q.QuestionOptions)           // A Question has many QuestionOptions
+            .WithOne(qo => qo.Question)                // Each QuestionOption belongs to a Question
+            .HasForeignKey(qo => qo.Id)        // Foreign key in QuestionOption
+            .OnDelete(DeleteBehavior.Cascade);         // Enable cascade delete
+    }
 }

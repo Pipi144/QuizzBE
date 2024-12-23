@@ -75,11 +75,11 @@ namespace QuizzAppAPI.Service
 
                 if (!await HandleResponse(response).ConfigureAwait(false))
                 {
+
                     return default;
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                Console.WriteLine(responseContent);
                 return JsonConvert.DeserializeObject<T>(responseContent);
             }
             catch (Exception ex)
@@ -94,6 +94,7 @@ namespace QuizzAppAPI.Service
             try
             {
                 var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = JsonConvert.DeserializeObject<Auth0ErrorResponseDto>(responseContent);
@@ -160,7 +161,6 @@ namespace QuizzAppAPI.Service
                 {
                     return default;
                 }
-
                 if (!await SetAuthorizationHeader("read:users read:roles read:role_members").ConfigureAwait(false))
                 {
                     return default;
@@ -244,7 +244,7 @@ namespace QuizzAppAPI.Service
         {
             try
             {
-                Console.WriteLine("UPDATE USER DETAILS");
+
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     _logger.LogWarning("UpdateUserDetails: Invalid user ID provided.");

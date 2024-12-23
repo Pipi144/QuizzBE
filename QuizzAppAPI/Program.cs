@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using QuizzAppAPI.Interfaces;
 using QuizzAppAPI.Middleware;
 using QuizzAppAPI.Models;
 using QuizzAppAPI.QuizAppDbContext;
+using QuizzAppAPI.Repositories;
 using QuizzAppAPI.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +20,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.WriteIndented = true; // Optional for readability
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -98,11 +104,14 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
+
+
 // Dependency injection
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IQuestionService, QuestionService>();
 
 builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
 builder.Services.AddHttpClient();
@@ -118,6 +127,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 app.UseMiddleware<AccessTokenValidationMiddleware>();
+app.UseMiddleware<ErrorHandlingMiddleware>();  // Register global error handler
 app.UseRouting();
 app.UseHttpsRedirection();
 
