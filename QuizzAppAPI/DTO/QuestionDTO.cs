@@ -7,7 +7,6 @@ public class QuestionBasicDto
 {
     public int Id { get; set; }
     public string QuestionText { get; set; }
-    public string CreatedByUserId { get; set; }
 }
 
 public class QuestionOptionBasicDto

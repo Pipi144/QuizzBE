@@ -111,6 +111,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
+builder.Services.AddScoped<IQuizService, QuizService>();    
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 
 builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
 builder.Services.AddHttpClient();

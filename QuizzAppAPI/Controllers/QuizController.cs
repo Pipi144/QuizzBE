@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizzAppAPI.Models;
-using QuizzAppAPI.QuizAppDbContext;
+using QuizzAppAPI.DTO;
+using QuizzAppAPI.Interfaces;
 
 namespace QuizzAppAPI.Controllers
 {
@@ -14,95 +8,134 @@ namespace QuizzAppAPI.Controllers
     [ApiController]
     public class QuizController : ControllerBase
     {
-        private readonly QuizDbContext _context;
+        private readonly IQuizService _quizService;
 
-        public QuizController(QuizDbContext context)
+        public QuizController(IQuizService quizService)
         {
-            _context = context;
+            _quizService = quizService;
         }
 
-        // GET: api/Quiz
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Quiz>>> GetQuizzes()
-        {
-            return await _context.Quizzes.ToListAsync();
-        }
 
-        // GET: api/Quiz/5
+        // Get quiz by ID
         [HttpGet("{id}")]
-        public async Task<ActionResult<Quiz>> GetQuiz(int id)
+        public async Task<IActionResult> GetQuizById(int id)
         {
-            var quiz = await _context.Quizzes.FindAsync(id);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            return quiz;
-        }
-
-        // PUT: api/Quiz/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuiz(int id, Quiz quiz)
-        {
-            if (id != quiz.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(quiz).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var quiz = await _quizService.GetQuizByIdAsync(id);
+                if (quiz == null)
+                {
+                    return NotFound($"Quiz with ID {id} not found.");
+                }
+
+                return Ok(quiz);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!QuizExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, "An unexpected error occurred while retrieving the quiz.");
             }
-
-            return NoContent();
         }
 
-        // POST: api/Quiz
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+        // Create a new quiz
         [HttpPost]
-        public async Task<ActionResult<Quiz>> PostQuiz(Quiz quiz)
+        public async Task<IActionResult> CreateQuiz([FromBody] AddQuizDataDto addQuizDataDto)
         {
-            _context.Quizzes.Add(quiz);
-            await _context.SaveChangesAsync();
+            try
+            {
+                if (addQuizDataDto == null)
+                {
+                    return BadRequest("Quiz data must be provided.");
+                }
 
-            return CreatedAtAction("GetQuiz", new { id = quiz.Id }, quiz);
+                var createdQuiz = await _quizService.CreateQuizAsync(addQuizDataDto);
+                Console.WriteLine("new quiz:" + createdQuiz);
+                // Ensure route matches GetQuizById
+                return CreatedAtAction(nameof(GetQuizById), new { id = createdQuiz.QuizId }, createdQuiz);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
 
-        // DELETE: api/Quiz/5
+
+        // Get all quizzes
+        [HttpGet]
+        public async Task<IActionResult> GetAllQuizzes()
+        {
+            try
+            {
+                var quizzes = await _quizService.GetAllQuizzesAsync();
+                return Ok(quizzes);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        }
+
+        // Update an existing quiz
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateQuiz(int id, [FromBody] UpdateQuizDataDto updateQuizDataDto)
+        {
+            try
+            {
+                if (updateQuizDataDto == null)
+                {
+                    return BadRequest("Quiz data must be provided.");
+                }
+
+                var updatedQuiz = await _quizService.UpdateQuizAsync(id, updateQuizDataDto);
+                return Ok(updatedQuiz);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        }
+
+        // Delete a quiz
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuiz(int id)
         {
-            var quiz = await _context.Quizzes.FindAsync(id);
-            if (quiz == null)
+            try
             {
-                return NotFound();
+                await _quizService.DeleteQuizAsync(id);
+                return NoContent();
             }
-
-            _context.Quizzes.Remove(quiz);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool QuizExists(int id)
-        {
-            return _context.Quizzes.Any(e => e.Id == id);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
     }
 }
