@@ -6,7 +6,7 @@ namespace QuizzAppAPI.Controllers
 {
     [Route("api/quiz")]
     [ApiController]
-    public class QuizController : ControllerBase
+    public class QuizController : ApiControllerBase
     {
         private readonly IQuizService _quizService;
 
@@ -36,6 +36,25 @@ namespace QuizzAppAPI.Controllers
             }
         }
 
+        // Get quiz by ID
+        [HttpGet("full/{id}")]
+        public async Task<IActionResult> GetQuizFullQuestionById(int id)
+        {
+            try
+            {
+                var quiz = await _quizService.GetQuizWithFullQuestionsAsync(id);
+                if (quiz == null)
+                {
+                    return NotFound($"Quiz with ID {id} not found.");
+                }
+
+                return Ok(quiz);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred while retrieving the quiz.");
+            }
+        }
 
         // Create a new quiz
         [HttpPost]
@@ -70,12 +89,20 @@ namespace QuizzAppAPI.Controllers
 
         // Get all quizzes
         [HttpGet]
-        public async Task<IActionResult> GetAllQuizzes()
+        public async Task<IActionResult> GetPaginatedQuizzes( [FromQuery] string? createdByUserId = null,
+            [FromQuery] string? questionText = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var quizzes = await _quizService.GetAllQuizzesAsync();
-                return Ok(quizzes);
+                var paginatedQuizzes = await _quizService.GetPaginatedQuizzesAsync(
+                    createdByUserId, 
+                    questionText, 
+                    page, 
+                    pageSize);
+
+                return Ok(paginatedQuizzes);
             }
             catch (ApplicationException ex)
             {
@@ -88,16 +115,11 @@ namespace QuizzAppAPI.Controllers
         }
 
         // Update an existing quiz
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateQuiz(int id, [FromBody] UpdateQuizDataDto updateQuizDataDto)
         {
             try
             {
-                if (updateQuizDataDto == null)
-                {
-                    return BadRequest("Quiz data must be provided.");
-                }
-
                 var updatedQuiz = await _quizService.UpdateQuizAsync(id, updateQuizDataDto);
                 return Ok(updatedQuiz);
             }

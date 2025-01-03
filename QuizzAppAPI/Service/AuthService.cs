@@ -40,8 +40,7 @@ public class AuthService : IAuthService
             content.Headers.ContentType = mediaType ?? new MediaTypeHeaderValue("application/json");
             var response = await _httpClient.PostAsync(url, content);
             var responseContent = await response.Content.ReadAsStringAsync();
-
-            Console.WriteLine(responseContent);
+            
             if (!response.IsSuccessStatusCode)
             {
                 var error = JsonConvert.DeserializeObject<Auth0ErrorResponseDto>(responseContent);

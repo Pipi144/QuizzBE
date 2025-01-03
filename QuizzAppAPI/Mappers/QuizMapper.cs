@@ -17,7 +17,19 @@ public class QuizMapper : Profile
         CreateMap<Quiz, QuizDetailDto>()
             .IncludeBase<Quiz, QuizBasicDto>() // Inherit basic mapping
             .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions.Select(qq => qq.Question)));
-
+        
+        // Map Quiz -> QuizWithFullQuestionsDto
+        CreateMap<Quiz, QuizWithFullQuestionsDto>()
+            .IncludeBase<Quiz, QuizBasicDto>() // Inherit basic mapping
+            .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions.Select(qq => qq.Question)))
+            .AfterMap((src, dest, context) =>
+            {
+                // Map each Question entity to QuestionDetailDto
+                dest.Questions = src.QuizQuestions
+                    .Select(qq => context.Mapper.Map<QuestionDetailDto>(qq.Question))
+                    .ToList();
+            });
+        
         // Map AddQuizDataDto -> Quiz
         CreateMap<AddQuizDataDto, Quiz>()
             .ForMember(dest => dest.Id, opt => opt.Ignore()) // Ignore Id as it will be generated

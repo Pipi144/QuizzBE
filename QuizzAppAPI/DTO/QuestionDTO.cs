@@ -7,12 +7,13 @@ public class QuestionBasicDto
 {
     public int Id { get; set; }
     public string QuestionText { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class QuestionOptionBasicDto
 {
+    public int Id { get; set; }
     public string OptionText { get; set; }
-    public bool IsCorrectAnswer { get; set; }
 }
 
 public class QuestionDetailDto : QuestionBasicDto

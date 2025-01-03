@@ -24,6 +24,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.WriteIndented = true; // Optional for readability
+    options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -88,18 +89,14 @@ builder.Services.AddAuthentication(options =>
 // Scope configuration
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("ReadUsers", policy => policy.Requirements.Add(new
-        HasScopeRequirement("read:users", domain)));
-    options.AddPolicy("EditUsers", policy => policy.Requirements.Add(new
-        HasScopeRequirement("write:users", domain)));
-    options.AddPolicy("DeleteUsers", policy => policy.Requirements.Add(new
-        HasScopeRequirement("delete:users", domain)));
-    options.AddPolicy("ReadQuiz", policy => policy.Requirements.Add(new
-        HasScopeRequirement("read:quiz", domain)));
-    options.AddPolicy("EditQuiz", policy => policy.Requirements.Add(new
-        HasScopeRequirement("write:quiz", domain)));
-    options.AddPolicy("DeleteQuiz", policy => policy.Requirements.Add(new
-        HasScopeRequirement("delete:quiz", domain)));
+    options.AddPolicy("RetrieveUser", policy => 
+        policy.RequireClaim("permissions", "read:users"));
+    options.AddPolicy("UpdateUser", policy => 
+        policy.RequireClaim("permissions", "update:users"));
+    options.AddPolicy("DeleteUser", policy => 
+        policy.RequireClaim("permissions", "delete:users"));
+    options.AddPolicy("GetUserInfo", policy => 
+        policy.RequireClaim("permissions", "read:current_user"));
 });
 
 builder.Services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
@@ -113,7 +110,8 @@ builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<IQuizService, QuizService>();    
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
-
+builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();    
+builder.Services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
 builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
 builder.Services.AddHttpClient();
 var app = builder.Build();

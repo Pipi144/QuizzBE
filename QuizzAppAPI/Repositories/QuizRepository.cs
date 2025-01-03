@@ -16,7 +16,7 @@ public class QuizRepository: IQuizRepository
         _logger = logger;
     }
 
-    public async Task<Quiz> CreateQuizAsync(Quiz quiz)
+    public async Task<Quiz?> CreateQuizAsync(Quiz? quiz)
     {
         try
         {
@@ -31,7 +31,7 @@ public class QuizRepository: IQuizRepository
         }
     }
 
-    public async Task<Quiz> GetQuizByIdAsync(int id)
+    public async Task<Quiz?> GetQuizByIdAsync(int id)
     {
         try
         {
@@ -47,23 +47,83 @@ public class QuizRepository: IQuizRepository
         }
     }
 
-    public async Task<IEnumerable<Quiz>> GetAllQuizzesAsync()
+    public async Task<Quiz?> GetQuizWithQuestionsAndOptionsAsync(int id)
     {
         try
         {
             return await _context.Quizzes
                 .Include(q => q.QuizQuestions)
                 .ThenInclude(qq => qq.Question)
-                .ToListAsync();
+                .ThenInclude(q => q.QuestionOptions)
+                .FirstOrDefaultAsync(q => q.Id == id).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving all quizzes.");
-            throw new ApplicationException("An error occurred while retrieving all quizzes.", ex);
+            _logger.LogError(ex, "Error occurred while fetching quiz with ID {Id}", id);
+            throw new ApplicationException("An error occurred while retrieving the quiz.", ex);
         }
     }
 
-    public async Task<Quiz> UpdateQuizAsync(Quiz quiz)
+
+    public async Task<PaginatedResult<Quiz>> GetPaginatedQuizzesAsync(
+        string? createdByUserId = null,
+        string? quizName = null,
+        int page = 1,
+        int pageSize = 10)
+    {
+        try
+        {
+            if (page <= 0 || pageSize <= 0)
+            {
+                throw new ArgumentException("Page and PageSize must be greater than 0.");
+            }
+
+            var query = _context.Quizzes.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(createdByUserId))
+            {
+                query = query.Where(q => q.CreatedByUserId == createdByUserId);
+            }
+
+            if (!string.IsNullOrEmpty(quizName))
+            {
+                query = query.Where(q => EF.Functions.ILike(q.QuizName, $"%{quizName}%"));
+            }
+
+            // Get total count
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination and include related data
+            var items = await query
+                .Include(q => q.QuizQuestions)
+                .ThenInclude(qq => qq.Question)
+                .OrderByDescending(q => q.CreatedAt) // Sort by ID or another field
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PaginatedResult<Quiz>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ApplicationException($"Invalid pagination parameters: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving paginated quizzes.");
+            throw new ApplicationException("An error occurred while retrieving quizzes.", ex);
+        }
+    }
+
+
+    public async Task<Quiz?> UpdateQuizAsync(Quiz? quiz)
     {
         try
         {

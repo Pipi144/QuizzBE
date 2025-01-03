@@ -16,26 +16,52 @@ public class QuestionService : IQuestionService
         _mapper = mapper;
     }
 
-    // Get all questions created by a specific user
-    public async Task<IEnumerable<QuestionBasicDto>> GetQuestionsByCreatedByUserIdAsync(string userId)
+    // Get all questions 
+    public async Task<PaginatedResult<QuestionBasicDto>> GetPaginatedQuestionsAsync(
+        string? createdByUserId = null,
+        string? questionText = null,
+        int page = 1,
+        int pageSize = 10)
     {
         try
         {
-            var questions = await _questionRepository.GetQuestionsByCreatedByUserIdAsync(userId);
+            if (page <= 0 || pageSize <= 0)
+            {
+                throw new ArgumentException("Page and PageSize must be greater than 0.");
+            }
 
-            return _mapper.Map<IEnumerable<QuestionBasicDto>>(questions);
+            var paginatedQuestions = await _questionRepository.GetPaginatedQuestionsAsync(
+                createdByUserId,
+                questionText,
+                page,
+                pageSize);
+
+           
+
+            return new PaginatedResult<QuestionBasicDto>
+            {
+                Items = _mapper.Map<List<QuestionBasicDto>>(paginatedQuestions.Items),
+                TotalCount = paginatedQuestions.TotalCount,
+                Page = paginatedQuestions.Page,
+                PageSize = paginatedQuestions.PageSize
+            };
         }
-        catch (NotFoundException ex)
+        catch (ArgumentException ex)
         {
-            throw new NotFoundException($"No questions found for user with ID {userId}. {ex.Message}");
+            throw new ApplicationException($"Invalid pagination parameters: {ex.Message}", ex);
+        }
+        catch (ApplicationException ex)
+        {
+            throw new ApplicationException($"Error retrieving questions: {ex.Message}", ex);
         }
         catch (Exception ex)
         {
-            throw new ApplicationException("An error occurred while fetching questions.", ex);
+            throw new ApplicationException("An unexpected error occurred while retrieving questions.", ex);
         }
     }
 
-    // Get detailed question by ID
+
+
     public async Task<QuestionDetailDto> GetQuestionByIdAsync(int id)
     {
         try

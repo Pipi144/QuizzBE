@@ -17,11 +17,17 @@ public class QuizBasicDto
     public string QuizName { get; set; }
     public int? TimeLimit { get; set; }
     public int NumberOfQuestions { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class QuizDetailDto : QuizBasicDto
 {
     public ICollection<QuestionBasicDto> Questions { get; set; }
+}
+
+public class QuizWithFullQuestionsDto : QuizBasicDto
+{
+    public ICollection<QuestionDetailDto> Questions { get; set; }
 }
 
 public class UpdateQuizDataDto

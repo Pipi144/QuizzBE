@@ -21,6 +21,7 @@ namespace QuizzAppAPI.Controllers
 
 
         [HttpPost("login")]
+        
         public async Task<IActionResult> Login([FromBody] LoginDto data)
         {
             if (!ModelState.IsValid)

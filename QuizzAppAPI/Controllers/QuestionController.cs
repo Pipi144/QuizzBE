@@ -12,7 +12,7 @@ namespace QuizzAppAPI.Controllers
 {
     [Route("api/question")]
     [ApiController]
-    public class QuestionController : ControllerBase
+    public class QuestionController : ApiControllerBase
     {
         private readonly IQuestionService _questionService;
         private readonly ILogger<QuestionController> _logger;
@@ -25,22 +25,25 @@ namespace QuizzAppAPI.Controllers
 
         // GET: api/question
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionBasicDto>>> GetQuestionsByUserId([FromQuery] string userId)
+        public async Task<IActionResult> GetPaginatedQuestions(
+            [FromQuery] string? createdByUserId = null,
+            [FromQuery] string? questionText = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var questions = await _questionService.GetQuestionsByCreatedByUserIdAsync(userId);
-                return Ok(questions);
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogError(ex, "Questions not found for user {UserId}", userId);
-                return NotFound(new { message = ex.Message });
+                var paginatedQuestions = await _questionService.GetPaginatedQuestionsAsync(
+                    createdByUserId, 
+                    questionText, 
+                    page, 
+                    pageSize);
+
+                return Ok(paginatedQuestions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unexpected error occurred.");
-                return StatusCode(500, new { message = "An unexpected error occurred." });
+                return StatusCode(500, "An unexpected error occurred while retrieving questions.");
             }
         }
 
@@ -122,8 +125,8 @@ namespace QuizzAppAPI.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred while updating the question." });
             }
         }
-        
-        
+
+
         // DELETE: api/question/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestion(int id)

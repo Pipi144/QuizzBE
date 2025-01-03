@@ -19,7 +19,71 @@ namespace QuizzAppAPI.Repositories
             _logger = logger;
         }
 
-        public async Task<IEnumerable<Question>> GetQuestionsByCreatedByUserIdAsync(string userId)
+       public async Task<PaginatedResult<Question>> GetPaginatedQuestionsAsync(
+    string? createdByUserId = null,
+    string? questionText = null,
+    int page = 1,
+    int pageSize = 10)
+{
+    try
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            throw new ArgumentException("Page and PageSize must be greater than 0.");
+        }
+
+        var query = _context.Questions.AsQueryable();
+
+        // Apply filters
+        if (!string.IsNullOrEmpty(createdByUserId))
+        {
+            query = query.Where(q => q.CreatedByUserId == createdByUserId);
+        }
+
+        if (!string.IsNullOrEmpty(questionText))
+        {
+            query = query.Where(q => EF.Functions.ILike(q.QuestionText, $"%{questionText}%"));
+        }
+
+        // Get total count
+        var totalCount = await query.CountAsync();
+
+        // Check if page exceeds available pages
+        var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+        if (page > totalPages && totalCount > 0)
+        {
+            throw new ArgumentOutOfRangeException("Page exceeds the total number of available pages.");
+        }
+
+        // Apply pagination
+        var items = await query
+            .Include(q => q.QuestionOptions)
+            .OrderByDescending(q => q.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PaginatedResult<Question>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+    catch (ArgumentException ex)
+    {
+        throw new ApplicationException($"Invalid pagination parameters: {ex.Message}", ex);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "An error occurred while retrieving paginated questions.");
+        throw new ApplicationException("An unexpected error occurred while retrieving questions.", ex);
+    }
+}
+
+
+        public async Task<IEnumerable<Question?>> GetQuestionsByCreatedByUserIdAsync(string userId)
         {
             try
             {
@@ -30,11 +94,11 @@ namespace QuizzAppAPI.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching questions for user {UserId}", userId);
-                return Enumerable.Empty<Question>();
+                return [];
             }
         }
 
-        public async Task<Question> GetQuestionByIdAsync(int id)
+        public async Task<Question?> GetQuestionByIdAsync(int id)
         {
             try
             {
@@ -50,7 +114,7 @@ namespace QuizzAppAPI.Repositories
             }
         }
 
-        public async Task<Question> AddQuestionAsync(Question question)
+        public async Task<Question?> AddQuestionAsync(Question? question)
         {
             try
             {
@@ -64,7 +128,7 @@ namespace QuizzAppAPI.Repositories
             }
         }
 
-        public async Task<Question> UpdateQuestionAsync(Question question)
+        public async Task<Question?> UpdateQuestionAsync(Question? question)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -127,7 +191,6 @@ namespace QuizzAppAPI.Repositories
                 if (options.Any())
                 {
                     _context.QuestionOptions.RemoveRange(options);
-
                 }
             }
             catch (NotFoundException ex)

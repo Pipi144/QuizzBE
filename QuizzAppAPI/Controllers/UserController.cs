@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using QuizzAppAPI.DTO;
@@ -22,6 +23,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpGet("current-user-info")]
+        [Authorize(Policy = "GetUserInfo")]
         public async Task<IActionResult> GetUserInfo()
         {
             try
@@ -46,6 +48,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = "DeleteUser")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             try
@@ -69,6 +72,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpGet("user-roles")]
+        [Authorize(Policy = "RetrieveUser")]
         public async Task<IActionResult> GetAllUserRoles()
         {
             try
@@ -87,6 +91,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "RetrieveUser")]
         public async Task<IActionResult> GetUserById(string id)
         {
             try
@@ -110,6 +115,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpGet("")]
+        [Authorize(Policy = "RetrieveUser")]
         public async Task<IActionResult> GetAllUsers([FromQuery] UserDto.GetUserListParamsDto param)
         {
             try
@@ -128,6 +134,7 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpPatch("{id}")]
+        [Authorize(Policy = "UpdateUser")]
         public async Task<IActionResult> UpdateUser(string id,
             [FromBody] UserDto.UpdateUserParamsDto updateUserParamsDto)
         {

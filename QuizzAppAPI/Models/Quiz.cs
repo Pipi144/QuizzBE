@@ -9,6 +9,7 @@ public class Quiz
     public int? TimeLimit { get; set; }
 
     [Required] public string CreatedByUserId { get; set; }
+    [Required] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<QuizQuestion> QuizQuestions { get; set; } =
         new List<QuizQuestion>(); // Navigation property for the join table

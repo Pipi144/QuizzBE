@@ -77,18 +77,64 @@ public class QuizService : IQuizService
         }
     }
 
-    public async Task<IEnumerable<QuizDetailDto>> GetAllQuizzesAsync()
+    public async Task<QuizWithFullQuestionsDto> GetQuizWithFullQuestionsAsync(int id)
     {
         try
         {
-            var quizzes = await _quizRepository.GetAllQuizzesAsync();
-            return _mapper.Map<IEnumerable<QuizDetailDto>>(quizzes);
+            var quiz = await _quizRepository.GetQuizWithQuestionsAndOptionsAsync(id);
+            if (quiz == null)
+            {
+                throw new KeyNotFoundException($"Quiz with ID {id} not found.");
+            }
+
+            return _mapper.Map<QuizWithFullQuestionsDto>(quiz);
         }
         catch (Exception ex)
         {
-            throw new ApplicationException("An error occurred while retrieving all quizzes.", ex);
+            throw new ApplicationException($"An error occurred while retrieving the quiz with ID {id}.", ex);
         }
     }
+
+    public async Task<PaginatedResult<QuizBasicDto>> GetPaginatedQuizzesAsync(
+        string? createdByUserId = null, 
+        string? quizName = null, 
+        int page = 1, 
+        int pageSize = 10)
+    {
+        try
+        {
+            if (page <= 0 || pageSize <= 0)
+            {
+                throw new ArgumentException("Page and PageSize must be greater than 0.");
+            }
+
+            // Get paginated results from the repository
+            var paginatedQuizzes = await _quizRepository.GetPaginatedQuizzesAsync(
+                createdByUserId, 
+                quizName, 
+                page, 
+                pageSize
+            );
+
+            // Map the results to DTOs
+            return new PaginatedResult<QuizBasicDto>
+            {
+                Items = _mapper.Map<List<QuizDetailDto>>(paginatedQuizzes.Items),
+                TotalCount = paginatedQuizzes.TotalCount,
+                Page = paginatedQuizzes.Page,
+                PageSize = paginatedQuizzes.PageSize
+            };
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ApplicationException($"Invalid pagination parameters: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("An error occurred while retrieving quizzes.", ex);
+        }
+    }
+
 
     public async Task<QuizDetailDto> UpdateQuizAsync(int id, UpdateQuizDataDto updateQuizDataDto)
     {
@@ -99,10 +145,15 @@ public class QuizService : IQuizService
             {
                 throw new KeyNotFoundException($"Quiz with ID {id} not found.");
             }
-
+        
             // Update fields
             existingQuiz.QuizName = updateQuizDataDto.QuizName ?? existingQuiz.QuizName;
-            existingQuiz.TimeLimit = updateQuizDataDto.TimeLimit ?? existingQuiz.TimeLimit;
+            // Explicitly handle TimeLimit
+            if (updateQuizDataDto.TimeLimit.HasValue)
+            {
+                existingQuiz.TimeLimit = updateQuizDataDto.TimeLimit == 0 ? null : (int?)updateQuizDataDto.TimeLimit;
+            }
+            
 
             if (updateQuizDataDto.QuestionIds != null)
             {

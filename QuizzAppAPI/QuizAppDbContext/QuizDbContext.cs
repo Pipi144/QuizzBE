@@ -10,8 +10,8 @@ public class QuizDbContext : DbContext
     {
     }
 
-    public DbSet<Quiz> Quizzes { get; set; }
-    public DbSet<Question> Questions { get; set; }
+    public DbSet<Quiz?> Quizzes { get; set; }
+    public DbSet<Question?> Questions { get; set; }
     public DbSet<QuestionOption> QuestionOptions { get; set; }
     public DbSet<QuizAttempt> QuizAttempts { get; set; }
     public DbSet<QuizQuestion> QuizQuestions { get; set; }

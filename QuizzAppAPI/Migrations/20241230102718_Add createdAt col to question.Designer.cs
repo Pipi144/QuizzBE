@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuizzAppAPI.QuizAppDbContext;
@@ -11,9 +12,11 @@ using QuizzAppAPI.QuizAppDbContext;
 namespace QuizzAppAPI.Migrations
 {
     [DbContext(typeof(QuizDbContext))]
-    partial class QuizDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241230102718_Add createdAt col to question")]
+    partial class AddcreatedAtcoltoquestion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,9 +82,6 @@ namespace QuizzAppAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("CreatedByUserId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -110,9 +110,6 @@ namespace QuizzAppAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("CorrectAnswers")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -120,9 +117,6 @@ namespace QuizzAppAPI.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("Score")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TotalQuestions")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
