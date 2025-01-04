@@ -63,6 +63,6 @@ Add your Auth0 credentials (domain, client ID, secret) under Auth0 settings.
 
 ### Connect with me
 - LinkedIn: www.linkedin.com/in/truong-peter-8875a6268
-Portfolio: https://vercel.com/pipi144s-projects#:~:text=pipitruong%2Dportfolio.vercel.app
+- Portfolio: https://vercel.com/pipi144s-projects#:~:text=pipitruong%2Dportfolio.vercel.app
 
 
