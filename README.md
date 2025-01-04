@@ -53,3 +53,15 @@ This project serves as a testament to my dedication, quick learning capabilities
    ```bash
    git clone https://github.com/Pipi144/QuizzBE.git
    cd QuizzBE
+Configure the appsettings.json:
+
+2. Update the ConnectionStrings section with your PostgreSQL database connection string.
+Add your Auth0 credentials (domain, client ID, secret) under Auth0 settings.
+
+---
+
+
+Connect with Me
+LinkedIn: www.linkedin.com/in/truong-peter-8875a6268
+Portfolio: https://vercel.com/pipi144s-projects#:~:text=pipitruong%2Dportfolio.vercel.app
+Let me know if you'd like more details or a live demonstration! 🚀
