@@ -6,6 +6,8 @@ Welcome to **QuizzBE**, the backend application powering a dynamic and secure qu
 
 ## Key Features
 
+**Note**: The application is currently hosted on a free-tier Azure App Service plan. As a result, you may experience slower response times due to resource limitations. This setup demonstrates cost-effective deployment strategies for small-scale applications.
+
 - **User Account Management**: Secure user authentication and account handling.
 - **Role-Based Authorization**: Fine-grained access control, allowing only admins to manage sensitive operations like user editing and quiz management.
 - **CRUD for Questions**: Create, read, update, and delete quiz questions seamlessly.
