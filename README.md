@@ -41,6 +41,9 @@ This project serves as a testament to my dedication, quick learning capabilities
 
 ---
 
+**Note**: Sensitive information such as database connection strings and Auth0 credentials are not included in the repository. These values are stored securely using environment variables and the .NET Secret Manager for local development.
+
+
 ## Getting Started
 
 ### Prerequisites
