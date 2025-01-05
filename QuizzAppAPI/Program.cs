@@ -18,6 +18,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add AutoMapper
 
+// Add environment variables to configuration
+builder.Configuration.AddEnvironmentVariables();
+
+var configuration = builder.Configuration;
+
+// Get sensitive information from environment variables
+var connectionString = configuration["DB_CONNECTION_STRING"];
+var auth0Domain = configuration["AUTH0_DOMAIN"];
+var auth0Audience = configuration["AUTH0_AUDIENCE"];
+var auth0ClientId = configuration["AUTH0_CLIENT_ID"];
+var auth0ClientSecret = configuration["AUTH0_CLIENT_SECRET"];
+var auth0Connection = configuration["AUTH0_CONNECTION"];
+
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -62,7 +76,7 @@ builder.Services.AddSwaggerGen(c =>
 
 //Register Db
 builder.Services.AddDbContext<QuizDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")).EnableSensitiveDataLogging());
+    options.UseNpgsql(connectionString).EnableSensitiveDataLogging());
 
 // Register AutoMapper with assembly scanning
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
