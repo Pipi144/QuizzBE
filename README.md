@@ -41,7 +41,8 @@ This project serves as a testament to my dedication, quick learning capabilities
 
 ---
 
-**Note**: Sensitive information such as database connection strings and Auth0 credentials are not included in the repository. These values are stored securely using environment variables and the .NET Secret Manager for local development.
+**Note**: Sensitive information such as database connection strings and Auth0 credentials are not included in this repository. These values are securely stored using Azure App Service Application Settings for production environments. This ensures secure and scalable management of secrets without hardcoding them in the source code.
+
 
 
 ## Getting Started
@@ -61,7 +62,7 @@ This project serves as a testament to my dedication, quick learning capabilities
 Configure the appsettings.json:
 
 2. Update the ConnectionStrings section with your PostgreSQL database connection string.
-Add your Auth0 credentials (domain, client ID, secret) under Auth0 settings.
+Add your Auth0 credentials (domain, client ID, secret) under Auth0 settings. Audience: https://localhost:7285/
 
 ---
 
