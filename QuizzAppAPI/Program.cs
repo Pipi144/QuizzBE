@@ -23,15 +23,6 @@ builder.Configuration.AddEnvironmentVariables();
 
 var configuration = builder.Configuration;
 
-// Get sensitive information from environment variables
-var connectionString = configuration["DB_CONNECTION_STRING"];
-var auth0Domain = configuration["AUTH0_DOMAIN"];
-var auth0Audience = configuration["AUTH0_AUDIENCE"];
-var auth0ClientId = configuration["AUTH0_CLIENT_ID"];
-var auth0ClientSecret = configuration["AUTH0_CLIENT_SECRET"];
-var auth0Connection = configuration["AUTH0_CONNECTION"];
-
-
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -75,8 +66,16 @@ builder.Services.AddSwaggerGen(c =>
 
 
 //Register Db
+// Configure Database Connection
 builder.Services.AddDbContext<QuizDbContext>(options =>
-    options.UseNpgsql(connectionString).EnableSensitiveDataLogging());
+{
+    var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("Database connection string is not configured.");
+    }
+    options.UseNpgsql(connectionString);
+});
 
 // Register AutoMapper with assembly scanning
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -85,16 +84,16 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddAuthorization();
 
 // Auth0 configuration
-var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    options.Authority = "https://dev-hpou0jp8hflr02wz.au.auth0.com/";
-    options.Audience = "https://localhost:7285/";
-
+    options.Authority = $"https://{Environment.GetEnvironmentVariable("AUTH0_DOMAIN")}/";
+    options.Audience = Environment.GetEnvironmentVariable("AUTH0_AUDIENCE");
+    
+    
     options.TokenValidationParameters = new TokenValidationParameters
     {
         NameClaimType = ClaimTypes.NameIdentifier
@@ -126,7 +125,19 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();    
 builder.Services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
-builder.Services.Configure<Auth0Settings>(builder.Configuration.GetSection("Auth0"));
+
+
+// Configure Auth0Settings
+builder.Services.Configure<Auth0Settings>(options =>
+{
+    options.Domain = Environment.GetEnvironmentVariable("AUTH0_DOMAIN");
+    options.Audience = Environment.GetEnvironmentVariable("AUTH0_AUDIENCE");
+    options.ClientId = Environment.GetEnvironmentVariable("AUTH0_CLIENT_ID");
+    options.ClientSecret = Environment.GetEnvironmentVariable("AUTH0_CLIENT_SECRET");
+    options.Connection = Environment.GetEnvironmentVariable("AUTH0_CONNECTION");
+});
+
+
 builder.Services.AddHttpClient();
 var app = builder.Build();
 
