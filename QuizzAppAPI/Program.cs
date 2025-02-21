@@ -17,11 +17,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Add AutoMapper
-
+DotNetEnv.Env.Load(); 
 // Add environment variables to configuration
 builder.Configuration.AddEnvironmentVariables();
 
 var configuration = builder.Configuration;
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Your Next.js dev server URL
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -152,7 +164,7 @@ app.UseMiddleware<AccessTokenValidationMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>(); // Register global error handler
 app.UseRouting();
 app.UseHttpsRedirection();
-
+app.UseCors("AllowFrontend");
 app.UseAuthorization();
 
 app.MapControllers();

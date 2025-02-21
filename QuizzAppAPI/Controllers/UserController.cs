@@ -23,12 +23,13 @@ namespace QuizzAppAPI.Controllers
         }
 
         [HttpGet("current-user-info")]
-        [Authorize(Policy = "GetUserInfo")]
+
         public async Task<IActionResult> GetUserInfo()
         {
             try
             {
                 var accessToken = _tokenService.ExtractAccessToken(Request.Headers);
+                _logger.LogInformation($"Get user info access token: {accessToken}");
                 if (accessToken == null)
                 {
                     return HandleError("Access token is missing or invalid.", StatusCodes.Status401Unauthorized);

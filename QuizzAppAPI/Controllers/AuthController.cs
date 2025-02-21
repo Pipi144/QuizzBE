@@ -35,10 +35,13 @@ namespace QuizzAppAPI.Controllers
             try
             {
                 var result = await _authService.Login(data);
-
+                _logger.LogInformation("SUCCESS LOGGED IN ACCOUNT");
+                
                 if (result != null) return Ok(result);
+                
                 // Handle errors directly from Auth0
                 var auth0Error = _authService.GetLastAuth0Error();
+
                 return auth0Error != null
                     ? HandleError(auth0Error.Content, auth0Error.StatusCode)
                     : HandleError("An unexpected error occurred.", StatusCodes.Status400BadRequest);
